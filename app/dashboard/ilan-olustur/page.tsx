@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -17,15 +20,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ImagePlus, Upload, X } from "lucide-react"
+import { ImagePlus, Upload, X, RefreshCw } from "lucide-react"
 
 export default function CreateListingPage() {
+  const [listingType, setListingType] = useState("product")
+
   return (
     <div className="flex flex-col gap-6 max-w-3xl mx-auto">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Yeni İlan Oluştur</h1>
         <p className="text-muted-foreground">
-          Satmak istediğiniz ürünü veya aradığınız iş gücünü binlerce kişiye ulaştırın.
+          Satmak, kiralamak veya <span className="text-primary font-semibold">takaslamak</span> istediğiniz ürünü listeleyin.
         </p>
       </div>
 
@@ -42,12 +47,13 @@ export default function CreateListingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>İlan Türü</Label>
-              <Select defaultValue="product">
+              <Select onValueChange={setListingType} defaultValue="product">
                 <SelectTrigger>
                   <SelectValue placeholder="Tür seçiniz" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="product">Ürün Satışı</SelectItem>
+                  <SelectItem value="barter">Takas (Barter)</SelectItem>
                   <SelectItem value="job">İş İlanı (Eleman Arayan)</SelectItem>
                   <SelectItem value="service">Hizmet (Biçerdöver vb.)</SelectItem>
                 </SelectContent>
@@ -69,17 +75,35 @@ export default function CreateListingPage() {
             </div>
           </div>
 
+          {/* TAKAS ÖZEL ALANI */}
+          {listingType === "barter" && (
+            <div className="bg-secondary/10 border border-secondary p-4 rounded-lg space-y-2 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-2 text-secondary-foreground font-semibold">
+                <RefreshCw className="h-5 w-5" />
+                <Label htmlFor="barter-desc" className="text-base">Takas Koşulları</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Ürününüzü ne ile takas etmek istersiniz? (Örn: 2020 model üstü traktör, 10 dönüm tarla vb.)
+              </p>
+              <Input 
+                id="barter-desc" 
+                placeholder="Örn: Yem karma makinesi veya 50 koyun ile takas olur." 
+                className="bg-background"
+              />
+            </div>
+          )}
+
           {/* Başlık ve Açıklama */}
           <div className="space-y-2">
             <Label htmlFor="title">İlan Başlığı</Label>
-            <Input id="title" placeholder="Örn: 10 Ton Kuru Fasulye Satılık" />
+            <Input id="title" placeholder="Örn: 10 Ton Kuru Fasulye" />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Açıklama</Label>
             <Textarea 
               id="description" 
-              placeholder="Ürününüzün veya işin detaylarını buraya yazın..." 
+              placeholder="Ürününüzün detaylarını buraya yazın..." 
               className="min-h-[120px]"
             />
           </div>
@@ -87,7 +111,9 @@ export default function CreateListingPage() {
           {/* Fiyat ve Miktar */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Fiyat / Ücret</Label>
+              <Label htmlFor="price">
+                {listingType === "barter" ? "Tahmini Değer (Opsiyonel)" : "Fiyat / Ücret"}
+              </Label>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-muted-foreground">₺</span>
                 <Input id="price" className="pl-7" placeholder="0.00" />
@@ -135,7 +161,6 @@ export default function CreateListingPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="merkez">Merkez</SelectItem>
-                  {/* Dinamik olarak dolacak */}
                 </SelectContent>
               </Select>
             </div>
@@ -173,7 +198,9 @@ export default function CreateListingPage() {
         </CardContent>
         <CardFooter className="flex justify-between border-t px-6 py-4">
           <Button variant="outline">İptal</Button>
-          <Button size="lg" className="px-8">İlanı Yayınla</Button>
+          <Button size="lg" className="px-8">
+            {listingType === "barter" ? "Takas İlanını Yayınla" : "İlanı Yayınla"}
+          </Button>
         </CardFooter>
       </Card>
     </div>

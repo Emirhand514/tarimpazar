@@ -5,10 +5,20 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Filter, Tractor } from "lucide-react";
+import { Search, MapPin, Filter, RefreshCw, ArrowRightLeft } from "lucide-react";
 
 // Mock Data
 const listings = [
+  {
+    id: 99,
+    title: "Yem Karma Makinesi (Takaslık)",
+    price: "Takas: 50 Koyun veya Dengi",
+    location: "Afyon, Emirdağ",
+    type: "Takas",
+    image: "https://placehold.co/400x300/purple/white?text=Takas",
+    category: "Ekipman",
+    isBarter: true
+  },
   {
     id: 1,
     title: "Satılık Massey Ferguson 5400",
@@ -45,24 +55,6 @@ const listings = [
     image: "https://placehold.co/400x300/brown/white?text=Tarla",
     category: "Emlak",
   },
-  {
-    id: 5,
-    title: "2. El Sulama Boruları",
-    price: "15.000 ₺",
-    location: "Konya, Çumra",
-    type: "Ürün",
-    image: "https://placehold.co/400x300/gray/white?text=Boru",
-    category: "Ekipman",
-  },
-  {
-    id: 6,
-    title: "Mevsimlik İşçi Ekibi (10 Kişi)",
-    price: "Anlaşmaya Bağlı",
-    location: "Antalya, Manavgat",
-    type: "Hizmet",
-    image: "https://placehold.co/400x300/purple/white?text=Isci",
-    category: "İş Gücü",
-  },
 ];
 
 export default function ExplorePage() {
@@ -95,6 +87,31 @@ export default function ExplorePage() {
               <Filter className="h-4 w-4" /> Filtreler
             </h3>
             
+            {/* İlan Tipi Filtresi */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-muted-foreground">İlan Tipi</h4>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="type-sale" />
+                <label htmlFor="type-sale" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Satılık
+                </label>
+              </div>
+               <div className="flex items-center space-x-2">
+                <Checkbox id="type-barter" className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600" />
+                <label htmlFor="type-barter" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-1 font-semibold text-purple-700">
+                  <RefreshCw className="h-3 w-3" /> Takaslık
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="type-job" />
+                <label htmlFor="type-job" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  İş İlanı
+                </label>
+              </div>
+            </div>
+
+            <Separator className="my-6" />
+
             {/* Kategori Filtresi */}
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-muted-foreground">Kategoriler</h4>
@@ -108,12 +125,6 @@ export default function ExplorePage() {
                 <Checkbox id="cat2" />
                 <label htmlFor="cat2" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                   Tarım Ekipmanları
-                </label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="cat3" />
-                <label htmlFor="cat3" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  İş Gücü / Operatör
                 </label>
               </div>
                <div className="flex items-center space-x-2">
@@ -159,7 +170,7 @@ export default function ExplorePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map((item) => (
-              <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer">
+              <Card key={item.id} className={`overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer ${item.isBarter ? 'border-purple-200 shadow-purple-100' : ''}`}>
                 <div className="aspect-video w-full overflow-hidden bg-muted relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
@@ -167,9 +178,17 @@ export default function ExplorePage() {
                     alt={item.title}
                     className="h-full w-full object-cover transition-transform group-hover:scale-105"
                   />
-                  <Badge className="absolute top-2 right-2 bg-background/80 text-foreground backdrop-blur-sm hover:bg-background/90">
-                    {item.type}
-                  </Badge>
+                  <div className="absolute top-2 right-2">
+                     {item.isBarter ? (
+                        <Badge className="bg-purple-600 hover:bg-purple-700 flex items-center gap-1">
+                            <ArrowRightLeft className="h-3 w-3" /> Takas
+                        </Badge>
+                     ) : (
+                        <Badge className="bg-background/80 text-foreground backdrop-blur-sm hover:bg-background/90">
+                            {item.type}
+                        </Badge>
+                     )}
+                  </div>
                 </div>
                 <CardHeader className="p-4">
                   <div className="flex justify-between items-start">
@@ -181,7 +200,9 @@ export default function ExplorePage() {
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                   <div className="flex flex-col gap-2">
-                    <p className="text-xl font-bold text-primary">{item.price}</p>
+                    <p className={`text-lg font-bold ${item.isBarter ? 'text-purple-700' : 'text-primary'}`}>
+                        {item.price}
+                    </p>
                     <div className="flex items-center text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4 mr-1" />
                       {item.location}
@@ -189,7 +210,9 @@ export default function ExplorePage() {
                   </div>
                 </CardContent>
                 <CardFooter className="p-4 pt-0 mt-2">
-                  <Button className="w-full" variant="secondary">Detayları Gör</Button>
+                  <Button className={`w-full ${item.isBarter ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`} variant={item.isBarter ? 'default' : 'secondary'}>
+                    Detayları Gör
+                  </Button>
                 </CardFooter>
               </Card>
             ))}
