@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // AvatarImage de eklendi
 import { PrismaClient } from "@prisma/client";
 import { MapPin, Calendar, User, MessageSquare, ArrowLeft, Share2, AlertTriangle, RefreshCw } from "lucide-react";
 import { notFound } from "next/navigation";
+import MessageButton from "./message-button"; // Doğru import edildi
 
 const prisma = new PrismaClient();
 
@@ -37,8 +38,8 @@ async function getListingDetail(id: string) {
   return null;
 }
 
-export default async function ListingDetailPage(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
+export default async function ListingDetailPage(props: { params: { id: string } }) { // Promise'i kaldırdım, direkt id
+  const params = props.params;
   const listing = await getListingDetail(params.id);
 
   if (!listing) {
@@ -139,11 +140,6 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
                         {isBarter ? "Teklif Usulü" : `${price} ₺`}
                     </p>
                 </div>
-import MessageButton from "./message-button";
-
-// ... (other imports)
-
-// ... inside the component
                 <CardContent className="p-6 grid gap-3">
                     <MessageButton receiverId={listing.userId} listingTitle={listing.title} />
                     <Button variant="outline" className="w-full">
@@ -157,6 +153,7 @@ import MessageButton from "./message-button";
                 <CardContent className="p-6">
                     <div className="flex items-center gap-4 mb-4">
                         <Avatar className="h-14 w-14 border-2 border-background shadow-sm">
+                            <AvatarImage src={listing.user.image || undefined} />
                             <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
                                 {listing.user.name ? listing.user.name.substring(0,2).toUpperCase() : "U"}
                             </AvatarFallback>
