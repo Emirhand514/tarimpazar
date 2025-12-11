@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Kullanıcı Rolleri
+enum Role {
+  FARMER      // Çiftçi
+  WORKER      // İşçi
+  ENGINEER    // Mühendis
+  BUSINESS    // İşletme
+  ADMIN       // Yönetici
+}
+
+// Kullanıcı Modeli
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String?   // Harici auth (OAuth) kullanılırsa boş olabilir
+  image         String?
+  role          Role      @default(FARMER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // İlişkiler
+  jobPostings   JobPosting[]
+  products      Product[]
+  messagesSent  Message[] @relation("SentMessages")
+  messagesReceived Message[] @relation("ReceivedMessages")
+}
+
+// İş İlanları (İstihdam Modülü)
+model JobPosting {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  location    String    // İl/İlçe
+  wage        Decimal   // Ücret
+  currency    String    @default("TRY")
+  workType    String    // Tam zamanlı, Mevsimlik vb.
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // İlişkiler
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+// Ürün İlanları (Market Modülü)
+model Product {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  price       Decimal
+  currency    String    @default("TRY")
+  category    String    // Tohum, Gübre, Traktör vb.
+  image       String?   // Ürün görseli URL'i
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // İlişkiler
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+// Mesajlaşma (Basit Yapı)
+model Message {
+  id          String    @id @default(cuid())
+  content     String
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  // İlişkiler
+  senderId    String
+  sender      User      @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId  String
+  receiver    User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
+}
