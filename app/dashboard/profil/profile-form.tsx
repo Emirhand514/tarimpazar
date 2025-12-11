@@ -155,7 +155,10 @@ export default function ProfileForm({ user }: { user: any }) {
               <div className="mx-auto relative mb-4 h-32 w-32 rounded-full border-4 border-background bg-primary/20 flex items-center justify-center group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                 <Avatar className="h-full w-full">
                    <AvatarImage src={preview || undefined} className="object-cover" />
-                   <AvatarFallback className="text-4xl">{first[0]}{last[0]}</AvatarFallback>
+                   <AvatarFallback className="text-4xl">
+                     {first ? first[0].toUpperCase() : "U"}
+                     {last ? last[0].toUpperCase() : ""}
+                   </AvatarFallback>
                 </Avatar>
                 
                 {/* Overlay */}
