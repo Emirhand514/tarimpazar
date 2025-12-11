@@ -4,15 +4,14 @@ import {
   Home,
   LineChart,
   Package,
-  Package2,
   Settings,
-  ShoppingCart,
   Users,
   Tractor,
   LogOut,
   Menu,
 } from "lucide-react";
 import React from "react";
+import { logoutAction } from "@/app/actions/auth";
 
 export default function DashboardLayout({
   children,
@@ -69,11 +68,6 @@ export default function DashboardLayout({
               </Link>
             </nav>
           </div>
-import { logoutAction } from "@/app/actions/auth";
-
-// ... (other imports remain same)
-
-// ... inside the component
           <div className="mt-auto p-4 border-t">
             <form action={logoutAction}>
               <button
