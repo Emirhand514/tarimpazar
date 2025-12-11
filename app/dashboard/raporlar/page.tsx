@@ -1,6 +1,7 @@
 "use client" // Client-side chart rendering
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { DollarSign, MessageSquare, Package, Eye, Filter } from "lucide-react";
 import { getReportStats, getMonthlyActivity, getUserListingsForReports } from "@/app/actions/report";
 import { useEffect, useState } from "react";
