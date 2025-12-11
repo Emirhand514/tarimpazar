@@ -7,15 +7,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-}
-
-// Kullanıcı Rolleri
-enum Role {
-  FARMER      // Çiftçi
-  WORKER      // İşçi
-  ENGINEER    // Mühendis
-  BUSINESS    // İşletme
-  ADMIN       // Yönetici
+  url      = env("DATABASE_URL")
 }
 
 // Kullanıcı Modeli
@@ -25,7 +17,7 @@ model User {
   email         String    @unique
   password      String?   // Harici auth (OAuth) kullanılırsa boş olabilir
   image         String?
-  role          Role      @default(FARMER)
+  role          String    @default("FARMER") // FARMER, WORKER, ENGINEER, BUSINESS, ADMIN
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

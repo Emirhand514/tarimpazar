@@ -69,14 +69,21 @@ export default function DashboardLayout({
               </Link>
             </nav>
           </div>
+import { logoutAction } from "@/app/actions/auth";
+
+// ... (other imports remain same)
+
+// ... inside the component
           <div className="mt-auto p-4 border-t">
-            <Link
-              href="/auth/sign-out" // Bu linki uygun bir çıkış rotasına yönlendirin
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-destructive hover:bg-destructive/10 transition-all"
-            >
-              <LogOut className="h-4 w-4" />
-              Çıkış Yap
-            </Link>
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-destructive hover:bg-destructive/10 transition-all"
+              >
+                <LogOut className="h-4 w-4" />
+                Çıkış Yap
+              </button>
+            </form>
           </div>
         </div>
       </div>

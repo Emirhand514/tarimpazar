@@ -1,7 +1,24 @@
+"use client"
+
 import Link from "next/link";
-import { Tractor, ArrowLeft, User, Users, Briefcase } from "lucide-react";
+import { Tractor, ArrowLeft, Users, Briefcase, Loader2 } from "lucide-react";
+import { signUpAction } from "@/app/actions/auth";
+import { useState, useTransition } from "react";
 
 export default function SignUpPage() {
+  const [isPending, startTransition] = useTransition();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  async function handleSubmit(formData: FormData) {
+    setErrorMessage(null);
+    startTransition(async () => {
+      const result = await signUpAction(formData);
+      if (result && !result.success) {
+        setErrorMessage(result.message);
+      }
+    });
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 p-4 md:p-8">
       <Link
@@ -23,7 +40,7 @@ export default function SignUpPage() {
           </p>
         </div>
 
-        <form className="space-y-6">
+        <form action={handleSubmit} className="space-y-6">
           {/* Rol Seçimi */}
           <div className="grid grid-cols-3 gap-2">
             <label className="cursor-pointer">
@@ -52,29 +69,43 @@ export default function SignUpPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label htmlFor="firstName" className="text-sm font-medium leading-none">Ad</label>
-              <input id="firstName" placeholder="Adınız" className="flex h-12 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" required />
+              <input id="firstName" name="firstName" placeholder="Adınız" className="flex h-12 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" required />
             </div>
             <div className="space-y-2">
               <label htmlFor="lastName" className="text-sm font-medium leading-none">Soyad</label>
-              <input id="lastName" placeholder="Soyadınız" className="flex h-12 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" required />
+              <input id="lastName" name="lastName" placeholder="Soyadınız" className="flex h-12 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" required />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium leading-none">E-posta veya Telefon</label>
-            <input id="email" type="text" placeholder="ornek@tarim.com" className="flex h-12 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" required />
+            <label htmlFor="email" className="text-sm font-medium leading-none">E-posta</label>
+            <input id="email" name="email" type="email" placeholder="ornek@tarim.com" className="flex h-12 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" required />
           </div>
 
           <div className="space-y-2">
             <label htmlFor="password" className="text-sm font-medium leading-none">Şifre</label>
-            <input id="password" type="password" className="flex h-12 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" required />
+            <input id="password" name="password" type="password" className="flex h-12 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" required />
           </div>
           
+          {errorMessage && (
+             <div className="p-3 text-sm text-red-500 bg-red-50 rounded-lg border border-red-100">
+                {errorMessage}
+             </div>
+          )}
+
           <button
             type="submit"
+            disabled={isPending}
             className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
           >
-            Hesap Oluştur
+             {isPending ? (
+                <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Hesap Oluşturuluyor...
+                </>
+            ) : (
+                "Hesap Oluştur"
+            )}
           </button>
         </form>
 

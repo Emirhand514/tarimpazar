@@ -1,7 +1,27 @@
+"use client"
+
 import Link from "next/link";
-import { Tractor, ArrowLeft } from "lucide-react";
+import { Tractor, ArrowLeft, Loader2 } from "lucide-react";
+import { loginAction } from "@/app/actions/auth";
+import { useState, useTransition } from "react";
+import { Button } from "@/components/ui/button"; // Eğer component varsa kullanalım, yoksa html button
 
 export default function SignInPage() {
+  const [isPending, startTransition] = useTransition();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  async function handleSubmit(formData: FormData) {
+    setErrorMessage(null);
+    startTransition(async () => {
+      const result = await loginAction(formData);
+      // loginAction içinde redirect olduğu için başarılıysa burası çalışmaz,
+      // ama hata dönerse buraya düşeriz.
+      if (result && !result.success) {
+        setErrorMessage(result.message);
+      }
+    });
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 p-4 md:p-8">
       <Link
@@ -23,17 +43,18 @@ export default function SignInPage() {
           </p>
         </div>
 
-        <form className="space-y-6">
+        <form action={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label
               htmlFor="email"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              E-posta veya Telefon
+              E-posta
             </label>
             <input
               id="email"
-              type="text"
+              name="email"
+              type="email"
               placeholder="ornek@tarim.com"
               className="flex h-12 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               required
@@ -56,17 +77,32 @@ export default function SignInPage() {
             </div>
             <input
               id="password"
+              name="password"
               type="password"
               className="flex h-12 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               required
             />
           </div>
           
+          {errorMessage && (
+             <div className="p-3 text-sm text-red-500 bg-red-50 rounded-lg border border-red-100">
+                {errorMessage}
+             </div>
+          )}
+
           <button
             type="submit"
+            disabled={isPending}
             className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
           >
-            Giriş Yap
+            {isPending ? (
+                <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Giriş Yapılıyor...
+                </>
+            ) : (
+                "Giriş Yap"
+            )}
           </button>
         </form>
 
