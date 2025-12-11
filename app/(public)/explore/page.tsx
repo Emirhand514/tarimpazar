@@ -226,9 +226,11 @@ export default async function ExplorePage(props: {
                         <span className="flex items-center gap-1">
                             <Briefcase className="h-3 w-3" /> {item.userName}
                         </span>
-                        <Button size="sm" className={`h-8 ${item.isBarter ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`} variant={item.isBarter ? 'default' : 'secondary'}>
-                            İncele
-                        </Button>
+                        <Link href={`/ilan/${item.id}`}>
+                          <Button size="sm" className={`h-8 ${item.isBarter ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`} variant={item.isBarter ? 'default' : 'secondary'}>
+                              İncele
+                          </Button>
+                        </Link>
                     </CardFooter>
                 </Card>
                 ))}
