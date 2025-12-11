@@ -5,71 +5,103 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Filter, RefreshCw, ArrowRightLeft } from "lucide-react";
+import { Search, MapPin, Filter, RefreshCw, ArrowRightLeft, Tractor, Briefcase } from "lucide-react";
+import { PrismaClient } from "@prisma/client";
 
-// Mock Data
-const listings = [
-  {
-    id: 99,
-    title: "Yem Karma Makinesi (Takaslık)",
-    price: "Takas: 50 Koyun veya Dengi",
-    location: "Afyon, Emirdağ",
-    type: "Takas",
-    image: "https://placehold.co/400x300/purple/white?text=Takas",
-    category: "Ekipman",
-    isBarter: true
-  },
-  {
-    id: 1,
-    title: "Satılık Massey Ferguson 5400",
-    price: "2.500.000 ₺",
-    location: "Konya, Karatay",
-    type: "Ürün",
-    image: "https://placehold.co/400x300/green/white?text=Traktor",
-    category: "Ekipman",
-  },
-  {
-    id: 2,
-    title: "10 Ton Kuru Fasulye",
-    price: "45 ₺ / Kg",
-    location: "Nevşehir, Derinkuyu",
-    type: "Ürün",
-    image: "https://placehold.co/400x300/orange/white?text=Fasulye",
-    category: "Tahıl & Bakliyat",
-  },
-  {
-    id: 3,
-    title: "Deneyimli Biçerdöver Operatörü",
-    price: "Günlük 3.000 ₺",
-    location: "Adana, Ceyhan",
-    type: "İş İlanı",
-    image: "https://placehold.co/400x300/blue/white?text=Operator",
-    category: "İş Gücü",
-  },
-  {
-    id: 4,
-    title: "Satılık 50 Dönüm Tarla",
-    price: "1.200.000 ₺",
-    location: "Ankara, Polatlı",
-    type: "Gayrimenkul",
-    image: "https://placehold.co/400x300/brown/white?text=Tarla",
-    category: "Emlak",
-  },
-];
+const prisma = new PrismaClient();
 
-export default function ExplorePage() {
+// Veritabanından ilanları çeken fonksiyon
+async function getListings(searchParams: { [key: string]: string | string[] | undefined }) {
+  const search = typeof searchParams.q === "string" ? searchParams.q : undefined;
+  // Basit filtreleme mantığı (Geliştirilebilir)
+  
+  // Ürünleri Çek
+  const products = await prisma.product.findMany({
+    where: {
+      active: true,
+      OR: search ? [
+        { title: { contains: search } }, // SQLite'da mode: 'insensitive' yok, büyük/küçük harf duyarlı olabilir
+        { description: { contains: search } },
+        { category: { contains: search } }
+      ] : undefined
+    },
+    include: { user: true },
+    orderBy: { createdAt: "desc" }
+  });
+
+  // İş İlanlarını Çek
+  const jobs = await prisma.jobPosting.findMany({
+    where: {
+      active: true,
+      OR: search ? [
+        { title: { contains: search } },
+        { description: { contains: search } },
+        { location: { contains: search } }
+      ] : undefined
+    },
+    include: { user: true },
+    orderBy: { createdAt: "desc" }
+  });
+
+  return { products, jobs };
+}
+
+export default async function ExplorePage(props: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const searchParams = await props.searchParams || {};
+  const { products, jobs } = await getListings(searchParams);
+
+  // Listeleri birleştirip formatlayalım
+  const allListings = [
+    ...products.map((p) => {
+        const isBarter = p.description.includes("[TAKAS:");
+        // Takas fiyatını açıklamanın başından çekmeye çalışalım veya direkt fiyatı gösterelim
+        // Basitlik için: Eğer takas ise fiyat yerine "Takas Teklifi" yazalım veya description'dan parse edelim.
+        // Ama şimdilik modelde 'price' sayısal. UI'da özel gösterim yapalım.
+        
+        return {
+            id: `prod-${p.id}`,
+            title: p.title,
+            price: isBarter ? "Takas Teklifi" : `${p.price} ₺`,
+            location: "Konum Bilgisi", // Ürün modelinde konum yoktu, eklenebilir. Şimdilik sabit.
+            type: isBarter ? "Takas" : "Ürün",
+            image: p.image || (isBarter ? "https://placehold.co/400x300/purple/white?text=Takas" : "https://placehold.co/400x300/green/white?text=Urun"),
+            category: p.category,
+            isBarter: isBarter,
+            userName: p.user.name || "Kullanıcı"
+        };
+    }),
+    ...jobs.map((j) => ({
+        id: `job-${j.id}`,
+        title: j.title,
+        price: `${j.wage} ₺ / Ay`, // veya saatlik
+        location: j.location,
+        type: "İş İlanı",
+        image: "https://placehold.co/400x300/blue/white?text=Is+Ilani",
+        category: "İş Gücü",
+        isBarter: false,
+        userName: j.user.name || "İşveren"
+    })),
+  ];
+
+  // (Opsiyonel) Client-side filtreleme için form submit işlemi gerekebilir.
+  // Şimdilik arama çubuğu bir form içinde olacak ve GET isteği atacak.
+
   return (
     <div className="flex flex-col min-h-screen bg-muted/20">
       {/* Header / Search Bar */}
       <div className="sticky top-0 z-40 bg-background border-b px-4 py-4 shadow-sm">
         <div className="container mx-auto flex gap-4 items-center">
-          <div className="relative flex-1">
+          <form className="relative flex-1" action="/explore">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input 
+              name="q"
               placeholder="Ne arıyorsunuz? (Traktör, İşçi, Tohum...)" 
               className="pl-10 h-12 text-base"
+              defaultValue={typeof searchParams.q === "string" ? searchParams.q : ""}
             />
-          </div>
+          </form>
           <Button variant="outline" size="icon" className="shrink-0 md:hidden">
             <Filter className="h-4 w-4" />
           </Button>
@@ -87,7 +119,7 @@ export default function ExplorePage() {
               <Filter className="h-4 w-4" /> Filtreler
             </h3>
             
-            {/* İlan Tipi Filtresi */}
+            {/* Bu filtreler şu an görsel (dummy), çalışması için URL parametrelerine bağlanmalı */}
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-muted-foreground">İlan Tipi</h4>
               <div className="flex items-center space-x-2">
@@ -127,34 +159,8 @@ export default function ExplorePage() {
                   Tarım Ekipmanları
                 </label>
               </div>
-               <div className="flex items-center space-x-2">
-                <Checkbox id="cat4" />
-                <label htmlFor="cat4" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Hayvancılık
-                </label>
-              </div>
             </div>
 
-            <Separator className="my-6" />
-
-            {/* Konum Filtresi */}
-             <div className="space-y-3">
-              <h4 className="text-sm font-medium text-muted-foreground">Konum</h4>
-              <Input placeholder="İl veya İlçe Ara..." className="h-9" />
-              <div className="flex items-center space-x-2">
-                <Checkbox id="loc1" />
-                <label htmlFor="loc1" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Konya
-                </label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="loc2" />
-                <label htmlFor="loc2" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Adana
-                </label>
-              </div>
-            </div>
-            
             <Separator className="my-6" />
 
              <Button className="w-full">Filtreleri Uygula</Button>
@@ -165,58 +171,69 @@ export default function ExplorePage() {
         <main className="flex-1">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold tracking-tight">Güncel İlanlar</h1>
-            <span className="text-muted-foreground text-sm">{listings.length} ilan bulundu</span>
+            <span className="text-muted-foreground text-sm">{allListings.length} ilan bulundu</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {listings.map((item) => (
-              <Card key={item.id} className={`overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer ${item.isBarter ? 'border-purple-200 shadow-purple-100' : ''}`}>
-                <div className="aspect-video w-full overflow-hidden bg-muted relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src={item.image} 
-                    alt={item.title}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                  />
-                  <div className="absolute top-2 right-2">
-                     {item.isBarter ? (
-                        <Badge className="bg-purple-600 hover:bg-purple-700 flex items-center gap-1">
-                            <ArrowRightLeft className="h-3 w-3" /> Takas
-                        </Badge>
-                     ) : (
-                        <Badge className="bg-background/80 text-foreground backdrop-blur-sm hover:bg-background/90">
-                            {item.type}
-                        </Badge>
-                     )}
-                  </div>
-                </div>
-                <CardHeader className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-bold text-lg leading-tight line-clamp-1">{item.title}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">{item.category}</p>
+          {allListings.length === 0 ? (
+             <div className="flex flex-col items-center justify-center py-20 bg-background rounded-xl border border-dashed">
+                <Tractor className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold">Sonuç Bulunamadı</h3>
+                <p className="text-muted-foreground">Aradığınız kriterlere uygun ilan yok.</p>
+             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {allListings.map((item) => (
+                <Card key={item.id} className={`overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer flex flex-col ${item.isBarter ? 'border-purple-200 shadow-purple-100' : ''}`}>
+                    <div className="aspect-video w-full overflow-hidden bg-muted relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                        src={item.image} 
+                        alt={item.title}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                    <div className="absolute top-2 right-2">
+                        {item.isBarter ? (
+                            <Badge className="bg-purple-600 hover:bg-purple-700 flex items-center gap-1">
+                                <ArrowRightLeft className="h-3 w-3" /> Takas
+                            </Badge>
+                        ) : (
+                            <Badge className="bg-background/80 text-foreground backdrop-blur-sm hover:bg-background/90">
+                                {item.type}
+                            </Badge>
+                        )}
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="flex flex-col gap-2">
-                    <p className={`text-lg font-bold ${item.isBarter ? 'text-purple-700' : 'text-primary'}`}>
-                        {item.price}
-                    </p>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {item.location}
                     </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="p-4 pt-0 mt-2">
-                  <Button className={`w-full ${item.isBarter ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`} variant={item.isBarter ? 'default' : 'secondary'}>
-                    Detayları Gör
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+                    <CardHeader className="p-4 pb-2">
+                    <div className="flex justify-between items-start">
+                        <div>
+                        <h3 className="font-bold text-lg leading-tight line-clamp-1">{item.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{item.category}</p>
+                        </div>
+                    </div>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 flex-1">
+                    <div className="flex flex-col gap-2">
+                        <p className={`text-lg font-bold ${item.isBarter ? 'text-purple-700' : 'text-primary'}`}>
+                            {item.price}
+                        </p>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        {item.location}
+                        </div>
+                    </div>
+                    </CardContent>
+                    <CardFooter className="p-4 pt-0 mt-auto border-t bg-muted/10 flex justify-between items-center text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                            <Briefcase className="h-3 w-3" /> {item.userName}
+                        </span>
+                        <Button size="sm" className={`h-8 ${item.isBarter ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`} variant={item.isBarter ? 'default' : 'secondary'}>
+                            İncele
+                        </Button>
+                    </CardFooter>
+                </Card>
+                ))}
+            </div>
+          )}
         </main>
       </div>
     </div>
