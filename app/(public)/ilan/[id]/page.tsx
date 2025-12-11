@@ -139,11 +139,13 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
                         {isBarter ? "Teklif Usulü" : `${price} ₺`}
                     </p>
                 </div>
+import MessageButton from "./message-button";
+
+// ... (other imports)
+
+// ... inside the component
                 <CardContent className="p-6 grid gap-3">
-                    <Button className="w-full h-12 text-base font-semibold" size="lg">
-                        <MessageSquare className="mr-2 h-5 w-5" />
-                        Mesaj Gönder
-                    </Button>
+                    <MessageButton receiverId={listing.userId} listingTitle={listing.title} />
                     <Button variant="outline" className="w-full">
                         İlan Sahibini Ara
                     </Button>

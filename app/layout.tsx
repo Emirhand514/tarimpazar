@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -7,15 +8,7 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
-  title: "Tarım Platformu",
-  description: "Türkiye'nin en büyük tarım istihdam ve ticaret platformu.",
-};
+// ... (rest of the file)
 
 export default function RootLayout({
   children,
@@ -28,6 +21,7 @@ export default function RootLayout({
         className={`${geistSans.variable} antialiased`}
       >
         {children}
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

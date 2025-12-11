@@ -1,9 +1,60 @@
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { DollarSign, MessageSquare, Package, Eye } from "lucide-react";
-// Placeholder for a potential chart library, e.g., Recharts, Nivo, or just static images
-// import { LineChart, BarChart } from 'recharts';
+"use client" // Client-side chart rendering
+
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { DollarSign, MessageSquare, Package, Eye, Filter } from "lucide-react";
+import { getReportStats, getMonthlyActivity, getUserListingsForReports } from "@/app/actions/report";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell,
+} from 'recharts';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; // Assuming this table component exists
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']; // for charts
 
 export default function ReportsPage() {
+  const [stats, setStats] = useState<any>(null);
+  const [monthlyActivity, setMonthlyActivity] = useState<any[]>([]);
+  const [userListings, setUserListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [statsData, monthlyData, listingsData] = await Promise.all([
+          getReportStats(),
+          getMonthlyActivity(),
+          getUserListingsForReports()
+        ]);
+        setStats(statsData);
+        setMonthlyActivity(monthlyData);
+        setUserListings(listingsData);
+      } catch (error) {
+        console.error("Rapor verileri çekilirken hata oluştu:", error);
+        toast.error("Rapor verileri yüklenirken bir sorun oluştu.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-48 text-muted-foreground">Yükleniyor...</div>;
+  }
+
+  if (!stats) {
+    return <div className="flex justify-center items-center h-48 text-destructive">Rapor verileri yüklenemedi veya oturum açılmadı.</div>;
+  }
+
+  // İlan durumu dağılımı için mock data (gerçekte DB'den çekilmeli)
+  const listingStatusData = [
+    { name: 'Aktif', value: stats.activeListings },
+    { name: 'Pasif', value: stats.totalListings - stats.activeListings },
+  ];
+
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -21,9 +72,9 @@ export default function ReportsPage() {
             <Package className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{stats.totalListings}</div>
             <p className="text-xs text-muted-foreground">
-              4 tanesi aktif
+              {stats.activeListings} tanesi aktif
             </p>
           </CardContent>
         </Card>
@@ -33,9 +84,9 @@ export default function ReportsPage() {
             <Eye className="h-4 w-4 text-accent-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+1,234</div>
+            <div className="text-2xl font-bold">{stats.totalViews}</div>
             <p className="text-xs text-muted-foreground">
-              Geçen aydan %15 daha fazla
+              (Tahmini)
             </p>
           </CardContent>
         </Card>
@@ -45,9 +96,9 @@ export default function ReportsPage() {
             <MessageSquare className="h-4 w-4 text-secondary-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">7</div>
+            <div className="text-2xl font-bold">{stats.newMessages}</div>
             <p className="text-xs text-muted-foreground">
-              Bugün 2 yeni mesaj
+              Okunmamış mesajlarınız
             </p>
           </CardContent>
         </Card>
@@ -57,57 +108,107 @@ export default function ReportsPage() {
             <DollarSign className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₺25.500</div>
+            <div className="text-2xl font-bold">₺{stats.estimatedRevenue}</div>
             <p className="text-xs text-muted-foreground">
-              Bu yılki tüm satışlardan
+              Aktif ürün satışlarından
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Grafik Alanları (Placeholder) */}
+      {/* Grafik Alanları */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>İlan Durumu Dağılımı</CardTitle>
-            <CardDescription>Aktif, bekleyen ve satılan ilanlarınızın oranı.</CardDescription>
+            <CardDescription>Aktif ve pasif ilanlarınızın oranı.</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Gerçek grafik buraya gelecek */}
-            <div className="flex items-center justify-center h-48 bg-muted/30 rounded-lg text-muted-foreground">
-              Grafik Alanı (Pie Chart)
-            </div>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={listingStatusData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                >
+                  {listingStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Aylık İlan Görüntülemeleri</CardTitle>
-            <CardDescription>İlanlarınızın aylık görüntülenme trendi.</CardDescription>
+            <CardTitle>Aylık İlan ve Mesaj Aktivitesi</CardTitle>
+            <CardDescription>İlan ve mesajlarınızın aylık trendi.</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Gerçek grafik buraya gelecek */}
-            <div className="flex items-center justify-center h-48 bg-muted/30 rounded-lg text-muted-foreground">
-              Grafik Alanı (Line Chart)
-            </div>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={monthlyActivity} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="listings" stroke="#8884d8" name="İlan Sayısı" />
+                <Line type="monotone" dataKey="messages" stroke="#82ca9d" name="Mesaj Sayısı" />
+              </LineChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
+      {/* Verilen İlanlar Tablosu */}
       <Card>
-        <CardHeader>
-          <CardTitle>Son İlan Faaliyetleri</CardTitle>
-          <CardDescription>Yakın zamandaki ilan hareketleri.</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Verilen İlanlar</CardTitle>
+            <CardDescription>Oluşturduğunuz tüm ilanların detaylı listesi.</CardDescription>
+          </div>
+          {/* Export button placeholder */}
+          <Button variant="outline" size="sm">Dışa Aktar (CSV)</Button>
         </CardHeader>
         <CardContent>
-          {/* Basit bir faaliyet listesi */}
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>- "Satılık Traktör" ilanı 10 yeni görüntüleme aldı. (5 dakika önce)</li>
-            <li>- "Kuru Fasulye" ilanınız için yeni mesaj var. (1 saat önce)</li>
-            <li>- "Satılık Mibzer" ilanı onaylandı ve yayına alındı. (Dün)</li>
-          </ul>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Başlık</TableHead>
+                  <TableHead>Kategori / Konum</TableHead>
+                  <TableHead>Fiyat / Ücret</TableHead>
+                  <TableHead>Durum</TableHead>
+                  <TableHead>Görüntülenme</TableHead>
+                  <TableHead>Tarih</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {userListings.map((listing) => (
+                  <TableRow key={listing.id}>
+                    <TableCell className="font-medium">{listing.title}</TableCell>
+                    <TableCell>{listing.category}</TableCell>
+                    <TableCell>{listing.price} ₺</TableCell>
+                    <TableCell>{listing.status}</TableCell>
+                    <TableCell>{listing.views}</TableCell>
+                    <TableCell>{listing.date}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
+        <CardFooter>
+          {/* Pagination or more info */}
+        </CardFooter>
       </Card>
-
     </div>
   );
 }

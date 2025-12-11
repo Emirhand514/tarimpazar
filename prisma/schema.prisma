@@ -18,6 +18,15 @@ model User {
   password      String?   // Harici auth (OAuth) kullanılırsa boş olabilir
   image         String?
   role          String    @default("FARMER") // FARMER, WORKER, ENGINEER, BUSINESS, ADMIN
+  
+  // Profil Bilgileri
+  phone         String?
+  city          String?
+  district      String?
+  bio           String?
+  certificates  String?   // Virgülle ayrılmış string veya JSON olabilir
+  crops         String?   // Yetiştirdiği ürünler (Örn: "Buğday, Mısır")
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -26,6 +35,8 @@ model User {
   products      Product[]
   messagesSent  Message[] @relation("SentMessages")
   messagesReceived Message[] @relation("ReceivedMessages")
+  conversationsAsP1 Conversation[] @relation("ConversationParticipant1")
+  conversationsAsP2 Conversation[] @relation("ConversationParticipant2")
 }
 
 // İş İlanları (İstihdam Modülü)
@@ -38,6 +49,7 @@ model JobPosting {
   currency    String    @default("TRY")
   workType    String    // Tam zamanlı, Mevsimlik vb.
   active      Boolean   @default(true)
+  images      String?   // Virgülle ayrılmış URL listesi
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -54,7 +66,8 @@ model Product {
   price       Decimal
   currency    String    @default("TRY")
   category    String    // Tohum, Gübre, Traktör vb.
-  image       String?   // Ürün görseli URL'i
+  image       String?   // Ana görsel (Thumbnail)
+  images      String?   // Galeri görselleri (Virgülle ayrılmış URL listesi)
   active      Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -64,16 +77,33 @@ model Product {
   user        User      @relation(fields: [userId], references: [id])
 }
 
-// Mesajlaşma (Basit Yapı)
-model Message {
-  id          String    @id @default(cuid())
-  content     String
-  isRead      Boolean   @default(false)
-  createdAt   DateTime  @default(now())
+// Mesajlaşma Modülleri
+model Conversation {
+  id              String    @id @default(cuid())
+  participant1Id  String
+  participant1    User      @relation("ConversationParticipant1", fields: [participant1Id], references: [id])
+  participant2Id  String
+  participant2    User      @relation("ConversationParticipant2", fields: [participant2Id], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  // İlişkiler
-  senderId    String
-  sender      User      @relation("SentMessages", fields: [senderId], references: [id])
-  receiverId  String
-  receiver    User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  messages        Message[] @relation("ConversationMessages")
+
+  @@unique([participant1Id, participant2Id]) // İki kişi arasında tek sohbet
+}
+
+model Message {
+  id              String       @id @default(cuid())
+  content         String
+  isRead          Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+
+  senderId        String
+  sender          User         @relation("SentMessages", fields: [senderId], references: [id])
+  
+  receiverId      String?      // Direkt mesaja gerek yok, Conversation üzerinden
+  receiver        User?        @relation("ReceivedMessages", fields: [receiverId], references: [id]) // Yine de tutabiliriz ama Conversation daha merkezi
+
+  conversationId  String
+  conversation    Conversation @relation("ConversationMessages", fields: [conversationId], references: [id])
 }
