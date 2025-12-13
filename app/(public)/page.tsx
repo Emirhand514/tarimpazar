@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowRight, Tractor, Wheat, Users, ShieldCheck } from "lucide-react";
 
 export default function Home() {
+  const heroParagraphText = "Çiftçiler, biçerdöver operatörleri ve tüccarlar tek platformda. İş gücünüzü bulun, ürününüzü değerinde satın.";
+
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-1">
@@ -16,10 +18,11 @@ export default function Home() {
                 Tarladan Sofraya <br className="hidden sm:inline" />
                 <span className="text-primary">Güvenli Ticaret</span>
               </h1>
+              {/* eslint-disable-next-line react/no-unescaped-entities */}
               <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl lg:text-2xl mt-4">
-                Çiftçiler, biçerdöver operatörleri ve tüccarlar tek platformda. 
-                İş gücünüzü bulun, ürününüzü değerinde satın.
+                {heroParagraphText}
               </p>
+
               <div className="flex flex-col sm:flex-row gap-4 mt-8 w-full sm:w-auto justify-center">
                 <Link
                   href="/auth/sign-up"

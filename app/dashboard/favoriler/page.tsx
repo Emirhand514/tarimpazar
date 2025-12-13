@@ -66,7 +66,7 @@ export default async function FavoritesPage() {
     if (!item) return null;
 
     return {
-        id: fav.id, // Favori ID'si (Taşıma işlemi için lazım)
+        favoriteId: fav.id, // Favori kaydının ID'si
         groupId: fav.groupId,
         ...item
     };

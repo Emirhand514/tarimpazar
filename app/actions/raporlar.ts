@@ -18,7 +18,7 @@ export async function getReportStats() {
     const totalReports = await prisma.report.count();
     const pendingReports = await prisma.report.count({ where: { status: "PENDING" } });
 
-    let estimatedRevenue: number | null = null; // Always null as per new requirement
+    const estimatedRevenue: number | null = null; // Always null as per new requirement
 
     return {
         totalUsers,

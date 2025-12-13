@@ -45,7 +45,7 @@ export default function ProfileForm({ user }: { user: any }) {
 
   const handleSubmit = async (formData: FormData) => {
     startTransition(async () => {
-      const result = await updateProfileAction(formData)
+      const result = await updateUserProfileAction(formData)
       if (result.success) {
         toast.success(result.message)
       } else {

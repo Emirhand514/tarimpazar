@@ -36,11 +36,14 @@ export default function EditListingForm({ listing }: { listing: any }) {
     formData.append("type", listing.type)
 
     startTransition(async () => {
-      const result = await updateListingAction(formData)
-      if (result.success) {
-        toast.success(result.message)
-      } else {
-        toast.error(result.message)
+      try {
+        await updateListingAction(formData);
+        // Eğer buraya gelirse, redirect çalışmadı veya başka bir sorun var
+        // Normalde updateListingAction başarılı olursa redirect yapar ve bu satırlara gelmez.
+        // Başarı mesajı redirect sonrası gösterilir veya backend'den dönen mesaja göre toast kullanılır.
+        // Şimdilik, başarılı bir işlemde bu kısma gelmeyeceği varsayılıyor.
+      } catch (error: any) {
+        toast.error(error.message || "İlan güncellenirken bir hata oluştu.");
       }
     })
   }

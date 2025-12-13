@@ -42,9 +42,12 @@ export default function CreateListingPage() {
     formData.append("type", listingType)
 
     startTransition(async () => {
-      const result = await createListingAction(formData)
-      if (result && !result.success) {
-        setErrorMessage(result.message)
+      try {
+        await createListingAction(formData);
+        // Eğer buraya gelirse, redirect çalışmadı veya başka bir sorun var
+        // Normalde createListingAction başarılı olursa redirect yapar ve bu satırlara gelmez.
+      } catch (error: any) {
+        setErrorMessage(error.message || "İlan oluşturulurken bir hata oluştu.");
       }
     })
   }

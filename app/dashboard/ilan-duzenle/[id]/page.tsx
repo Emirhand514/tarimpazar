@@ -12,10 +12,10 @@ async function getListing(id: string) {
   // Ama burada path sadece [id].
   // O zaman ID'ye göre her iki tabloda arayalım.
   
-  let product = await prisma.product.findUnique({ where: { id } });
+  const product = await prisma.product.findUnique({ where: { id } });
   if (product) return { ...product, type: "product" as const };
 
-  let job = await prisma.jobPosting.findUnique({ where: { id } });
+  const job = await prisma.jobPosting.findUnique({ where: { id } });
   if (job) return { ...job, type: "job" as const };
 
   return null;

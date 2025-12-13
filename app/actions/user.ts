@@ -13,6 +13,12 @@ interface UserData {
   city: string | null;
   district: string | null;
   createdAt: Date;
+  phone: string | null;
+  isBanned: boolean;
+  bannedUntil: Date | null;
+  banReason: string | null;
+  isRestricted: boolean;
+  restrictionReason: string | null;
 }
 
 export async function fetchUsersAction(query: string): Promise<UserData[]> {

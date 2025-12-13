@@ -18,7 +18,7 @@ export default function FavoriteButton({ listingId, type, initialIsFavorited }: 
     startTransition(async () => {
       const result = await toggleFavoriteAction(listingId, type)
       if (result.success) {
-        setIsFavorited(result.isFavorited)
+        setIsFavorited(!!result.isFavorited)
         toast.success(result.message)
       } else {
         // Revert on error
