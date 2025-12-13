@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition, useRef } from "react"
-import { updateProfileAction } from "@/app/actions/profile"
+import { updateUserProfileAction } from "@/app/actions/profile"
 import { Button } from "@/components/ui/button"
 import {
   Card,

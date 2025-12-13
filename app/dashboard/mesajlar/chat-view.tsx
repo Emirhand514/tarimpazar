@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import BlockButton from "@/components/block-button"
+import ReportButton from "@/components/report-button"; // Import ReportButton
 
-export default function ChatView({ conversationId, partner, initialMessages }: { conversationId: string, partner: any, initialMessages: any[] }) {
+export default function ChatView({ conversationId, partner, initialMessages, initialIsBlocked, isLoggedIn }: { conversationId: string, partner: any, initialMessages: any[], initialIsBlocked: boolean, isLoggedIn: boolean }) {
   const [messages, setMessages] = useState(initialMessages)
   const [newMessage, setNewMessage] = useState("")
   const [isSending, setIsSending] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivLement>(null)
   const router = useRouter()
 
   // Otomatik kaydırma
@@ -62,12 +64,18 @@ export default function ChatView({ conversationId, partner, initialMessages }: {
   return (
     <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="p-4 border-b flex items-center gap-3 bg-background">
-            <Avatar className="h-10 w-10">
-                <AvatarImage src={partner.image || undefined} />
-                <AvatarFallback>{partner.name ? partner.name.substring(0,2).toUpperCase() : "U"}</AvatarFallback>
-            </Avatar>
-            <h3 className="font-semibold text-lg">{partner.name}</h3>
+        <div className="p-4 border-b flex items-center justify-between bg-background">
+            <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                    <AvatarImage src={partner.image || undefined} />
+                    <AvatarFallback>{partner.name ? partner.name.substring(0,2).toUpperCase() : "U"}</AvatarFallback>
+                </Avatar>
+                <h3 className="font-semibold text-lg">{partner.name}</h3>
+            </div>
+            <div className="flex gap-2"> {/* Use flex gap for buttons */}
+                <BlockButton userId={partner.id} initialIsBlocked={initialIsBlocked} />
+                <ReportButton reportedUserId={partner.id} isLoggedIn={isLoggedIn} variant="outline" className="text-muted-foreground hover:bg-yellow-50 hover:text-yellow-600 border-yellow-200" />
+            </div>
         </div>
 
         {/* Messages Area */}

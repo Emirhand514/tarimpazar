@@ -8,8 +8,11 @@ import { PrismaClient } from "@prisma/client";
 import { MapPin, Calendar, User, MessageSquare, ArrowLeft, Share2, AlertTriangle, RefreshCw } from "lucide-react";
 import { notFound } from "next/navigation";
 import MessageButton from "./message-button"; // Doğru import edildi
-
-const prisma = new PrismaClient();
+import CallButton from "./call-button";
+import { getCurrentUser } from "@/lib/auth";
+import FavoriteButton from "@/components/favorite-button";
+import { prisma } from "@/lib/prisma";
+import ReportButton from "@/components/report-button"; // Import ReportButton
 
 async function getListingDetail(id: string) {
   // ID formatı: "prod-clps..." veya "job-clps..."
@@ -20,7 +23,18 @@ async function getListingDetail(id: string) {
   if (type === "prod") {
     const product = await prisma.product.findUnique({
       where: { id: realId },
-      include: { user: true }
+      include: { 
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            role: true,
+            createdAt: true,
+            phone: true, // Fetch user's phone
+          }
+        }
+      }
     });
     if (!product) return null;
     return { ...product, type: "product" as const };
@@ -29,7 +43,18 @@ async function getListingDetail(id: string) {
   if (type === "job") {
     const job = await prisma.jobPosting.findUnique({
       where: { id: realId },
-      include: { user: true }
+      include: { 
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            role: true,
+            createdAt: true,
+            phone: true, // Fetch user's phone
+          }
+        }
+      }
     });
     if (!job) return null;
     return { ...job, type: "job" as const };
@@ -38,9 +63,10 @@ async function getListingDetail(id: string) {
   return null;
 }
 
-export default async function ListingDetailPage(props: { params: { id: string } }) { // Promise'i kaldırdım, direkt id
-  const params = props.params;
+export default async function ListingDetailPage(props: { params: Promise<{ id: string }> }) { // Params artık bir Promise
+  const params = await props.params;
   const listing = await getListingDetail(params.id);
+  const currentUser = await getCurrentUser();
 
   if (!listing) {
     notFound();
@@ -50,11 +76,50 @@ export default async function ListingDetailPage(props: { params: { id: string } 
   // @ts-ignore - Prisma tipleri dynamic return ile bazen karışabilir, basitleştiriyoruz
   const price = listing.type === "product" ? listing.price : listing.wage;
   // @ts-ignore
-  const location = listing.type === "product" ? "Konum Bilgisi Alınamadı" : listing.location;
+  const location = listing.type === "product" ? (listing.city ? `${listing.city}, ${listing.district}` : "Konum Bilgisi Alınamadı") : 
+                   (listing.city ? `${listing.city}, ${listing.district}` : (listing.location || "Konum Bilgisi Alınamadı"));
   // @ts-ignore
-  const image = listing.type === "product" && listing.image ? listing.image : 
+  const image = listing.type === "product" && listing.images ? listing.images.split(",")[0] : 
+                (listing.type === "job" && listing.images ? listing.images.split(",")[0] :
                 (listing.type === "job" ? "https://placehold.co/800x600/blue/white?text=Is+Ilani" : 
-                "https://placehold.co/800x600/green/white?text=Urun");
+                "https://placehold.co/800x600/green/white?text=Urun"));
+  // @ts-ignore
+  const contactPhoneNumber = listing.contactPhone || listing.user.phone;
+
+  const isFavorited = currentUser ? await prisma.favorite.findFirst({
+    where: {
+        userId: currentUser.id,
+        ...(listing.type === "product" ? { productId: listing.id } : { jobPostingId: listing.id })
+    }
+  }) : null;
+
+  // Block Check
+  let hasBlocked = false; // Current user blocked the seller
+  let isBlockedBy = false; // Seller blocked the current user
+
+  if (currentUser && currentUser.id !== listing.userId) {
+      const blockRelation = await prisma.block.findUnique({
+          where: {
+              blockerId_blockedId: {
+                  blockerId: currentUser.id,
+                  blockedId: listing.userId
+              }
+          }
+      });
+      hasBlocked = !!blockRelation;
+
+      const blockedByRelation = await prisma.block.findUnique({
+          where: {
+              blockerId_blockedId: {
+                  blockerId: listing.userId,
+                  blockedId: currentUser.id
+              }
+          }
+      });
+      isBlockedBy = !!blockedByRelation;
+  }
+
+  const canContact = !hasBlocked && !isBlockedBy;
 
   return (
     <div className="min-h-screen bg-muted/20 py-8">
@@ -101,9 +166,16 @@ export default async function ListingDetailPage(props: { params: { id: string } 
                     <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">
                         {listing.title}
                     </h1>
-                    <Button variant="ghost" size="icon" className="shrink-0">
-                        <Share2 className="h-5 w-5 text-muted-foreground" />
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <FavoriteButton 
+                            listingId={listing.id} 
+                            type={listing.type} 
+                            initialIsFavorited={!!isFavorited} 
+                        />
+                        <Button variant="ghost" size="icon">
+                            <Share2 className="h-5 w-5 text-muted-foreground" />
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -120,7 +192,19 @@ export default async function ListingDetailPage(props: { params: { id: string } 
                 <div className="prose prose-stone max-w-none dark:prose-invert">
                     <h3 className="text-lg font-semibold mb-2">Açıklama</h3>
                     <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                        {listing.description}
+                        {(() => {
+                            let displayDescription = listing.description;
+                            if (isBarter) {
+                                // Attempt to remove "[TAKAS: ... ]" from the beginning of the description
+                                const regex = /^\[TAKAS:.*?\]\s*/i; 
+                                displayDescription = displayDescription.replace(regex, '').trim();
+                                // Fallback for simpler "[TAKAS:" prefix if regex didn't match (e.g., no closing bracket)
+                                if (displayDescription.startsWith("[TAKAS:")) {
+                                    displayDescription = displayDescription.substring("[TAKAS:".length).trim();
+                                }
+                            }
+                            return displayDescription;
+                        })()}
                     </p>
                 </div>
               </div>
@@ -141,10 +225,16 @@ export default async function ListingDetailPage(props: { params: { id: string } 
                     </p>
                 </div>
                 <CardContent className="p-6 grid gap-3">
-                    <MessageButton receiverId={listing.userId} listingTitle={listing.title} />
-                    <Button variant="outline" className="w-full">
-                        İlan Sahibini Ara
-                    </Button>
+                    {canContact ? (
+                        <>
+                            <MessageButton receiverId={listing.userId} listingTitle={listing.title} currentUserId={currentUser?.id} />
+                            <CallButton phoneNumber={contactPhoneNumber} isLoggedIn={!!currentUser} />
+                        </>
+                    ) : (
+                         <div className="p-3 text-center text-sm bg-red-50 text-red-600 rounded-lg border border-red-100">
+                            {hasBlocked ? "Bu kullanıcıyı engellediniz." : "Bu kullanıcıya ulaşamazsınız."}
+                         </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -166,9 +256,15 @@ export default async function ListingDetailPage(props: { params: { id: string } 
                         </div>
                     </div>
                     <Separator className="mb-4" />
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <User className="h-4 w-4" />
-                        <span>Üyelik Tarihi: {listing.user.createdAt.toLocaleDateString("tr-TR")}</span>
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <User className="h-4 w-4" />
+                            <span>Üyelik Tarihi: {listing.user.createdAt.toLocaleDateString("tr-TR")}</span>
+                        </div>
+                        {/* Report Button */}
+                        {currentUser && currentUser.id !== listing.userId && (
+                            <ReportButton reportedUserId={listing.userId} isLoggedIn={!!currentUser} className="w-full" />
+                        )}
                     </div>
                 </CardContent>
             </Card>

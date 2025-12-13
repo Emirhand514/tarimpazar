@@ -40,22 +40,42 @@ export async function sendMessageAction(receiverId: string, content: string) {
     }
 
     // Mesajı oluştur
-    await prisma.message.create({
+    const newMessage = await prisma.message.create({
       data: {
         content,
         senderId,
         receiverId, // Opsiyonel ama tutalım
         conversationId: conversation.id,
       },
-    })
+    });
 
     // Güncelleme: Sohbetin updatedAt zamanını güncelle (Listede yukarı çıksın)
     await prisma.conversation.update({
       where: { id: conversation.id },
       data: { updatedAt: new Date() },
-    })
+    });
+
+    // Alıcıya bildirim gönder
+    const sender = await prisma.user.findUnique({
+      where: { id: senderId },
+      select: { name: true },
+    });
+
+    if (sender && sender.name) {
+      await prisma.notification.create({
+        data: {
+          userId: receiverId,
+          title: "Yeni Mesaj",
+          message: `${sender.name} size bir mesaj gönderdi.`,
+          link: `/dashboard/mesajlar?conv=${conversation.id}`,
+          type: "INFO",
+        },
+      });
+    }
 
     revalidatePath("/dashboard/mesajlar")
+    // Also revalidate the notifications page to update the count
+    revalidatePath("/dashboard/bildirimler")
     return { success: true, message: "Mesaj gönderildi." }
 
   } catch (error) {

@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MoreVertical, Edit, Trash, Eye, MapPin } from "lucide-react";
 import Link from "next/link";
-import { deleteListingAction } from "@/app/actions/listing";
+import { deleteListingAction } from "@/app/actions/admin";
 import { useTransition } from "react";
 import { toast } from "sonner";
 

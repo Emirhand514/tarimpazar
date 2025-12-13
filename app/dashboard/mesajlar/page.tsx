@@ -4,21 +4,37 @@ import { Input } from "@/components/ui/input";
 import { MessageSquare, Search } from "lucide-react";
 import { getConversations, getMessages } from "@/app/actions/message";
 import ChatView from "./chat-view";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function MessagesPage(props: {
   searchParams?: Promise<{ conv?: string }>;
 }) {
   const searchParams = await props.searchParams || {};
   const conversations = await getConversations();
+  const currentUser = await getCurrentUser();
   const selectedConversationId = searchParams.conv;
 
   let selectedConversation = null;
   let initialMessages: any[] = [];
+  let initialIsBlocked = false;
 
   if (selectedConversationId) {
     selectedConversation = conversations.find(c => c.id === selectedConversationId);
     if (selectedConversation) {
         initialMessages = await getMessages(selectedConversationId);
+        
+        if (currentUser) {
+            const block = await prisma.block.findUnique({
+                where: {
+                    blockerId_blockedId: {
+                        blockerId: currentUser.id,
+                        blockedId: selectedConversation.partner.id
+                    }
+                }
+            });
+            initialIsBlocked = !!block;
+        }
     }
   }
 
@@ -78,7 +94,9 @@ export default async function MessagesPage(props: {
           <ChatView 
             conversationId={selectedConversation.id} 
             partner={selectedConversation.partner} 
-            initialMessages={initialMessages} 
+            initialMessages={initialMessages}
+            initialIsBlocked={initialIsBlocked}
+            isLoggedIn={!!currentUser} // Pass isLoggedIn prop
           />
         ) : (
           <div className="flex flex-1 items-center justify-center text-muted-foreground text-center p-8">

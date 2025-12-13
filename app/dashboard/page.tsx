@@ -1,12 +1,16 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"; // Assuming a Card component exists or will be created
 import { Button } from "@/components/ui/button"; // Assuming a Button component exists or will be created
 import Link from "next/link";
-import { DollarSign, MessageSquare, Tractor, Plus, User } from "lucide-react";
+import { DollarSign, MessageSquare, Tractor, Plus, User, FolderX, Heart } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth"; // getCurrentUser fonksiyonunu import et
 
-export default function DashboardPage() {
+export default async function DashboardPage() { // Bileşeni async yap
+  const user = await getCurrentUser(); // Kullanıcı bilgilerini al
+  const userName = user?.name || "Kullanıcı"; // Kullanıcı adını al veya varsayılan değer ata
+
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold tracking-tight">Merhaba, Kullanıcı!</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Merhaba, {userName}!</h1>
       <p className="text-muted-foreground">
         Panelinize hoş geldiniz. İşte son durumunuzun bir özeti.
       </p>
@@ -19,7 +23,7 @@ export default function DashboardPage() {
             <Tractor className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{user?.activeListingsCount ?? 0}</div>
             <p className="text-xs text-muted-foreground">
               Geçen haftadan 2 yeni ilan
             </p>
@@ -31,33 +35,34 @@ export default function DashboardPage() {
             <MessageSquare className="h-4 w-4 text-secondary-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">{user?.unreadNotificationCount ?? 0}</div>
             <p className="text-xs text-muted-foreground">
               Bugün 1 yeni mesaj aldınız
             </p>
           </CardContent>
         </Card>
+
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bekleyen Ödeme</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-500" /> {/* Özel bir yeşil tonu */}
+            <CardTitle className="text-sm font-medium">Pasif İlanlar</CardTitle>
+            <FolderX className="h-4 w-4 text-accent-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₺1.250</div>
+            <div className="text-2xl font-bold">{user?.passiveListingsCount ?? 0}</div>
             <p className="text-xs text-muted-foreground">
-              Son ödeme 3 gün içinde
+              Yayında olmayan ilanlarınız
             </p>
           </CardContent>
         </Card>
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Profil Tamamlanma</CardTitle>
-            <User className="h-4 w-4 text-accent-foreground" />
+            <CardTitle className="text-sm font-medium">Toplam Favori Sayısı</CardTitle>
+            <Heart className="h-4 w-4 text-rose-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">75%</div>
+            <div className="text-2xl font-bold">{user?.totalFavoritesCount ?? 0}</div>
             <p className="text-xs text-muted-foreground">
-              Bilgilerinizi güncelleyin
+              İlanlarınızın toplam beğeni sayısı
             </p>
           </CardContent>
         </Card>

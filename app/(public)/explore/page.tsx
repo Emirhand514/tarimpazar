@@ -2,43 +2,131 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Filter, RefreshCw, ArrowRightLeft, Tractor, Briefcase } from "lucide-react";
+import { Search, MapPin, RefreshCw, ArrowRightLeft, Tractor, Briefcase, Filter } from "lucide-react";
 import { PrismaClient } from "@prisma/client";
+import { FilterSidebar } from "@/components/explore/FilterSidebar"; 
+import { Prisma } from "@prisma/client"; 
 
 const prisma = new PrismaClient();
 
 // Veritabanından ilanları çeken fonksiyon
 async function getListings(searchParams: { [key: string]: string | string[] | undefined }) {
   const search = typeof searchParams.q === "string" ? searchParams.q : undefined;
-  // Basit filtreleme mantığı (Geliştirilebilir)
+  const typeParams = searchParams.type;
+  const categoryParams = searchParams.category;
   
+  // Location params
+  const cityParam = typeof searchParams.city === "string" ? searchParams.city : undefined;
+  const districtParam = typeof searchParams.district === "string" ? searchParams.district : undefined;
+  // Fallback/Legacy generic location search
+  const locationParam = typeof searchParams.location === "string" ? searchParams.location : undefined;
+
+  const minPriceParam = typeof searchParams.minPrice === "string" ? parseFloat(searchParams.minPrice) : undefined;
+  const maxPriceParam = typeof searchParams.maxPrice === "string" ? parseFloat(searchParams.maxPrice) : undefined;
+
+  const typeFilter = Array.isArray(typeParams) ? typeParams : (typeParams ? [typeParams] : []);
+  const categoryFilter = Array.isArray(categoryParams) ? categoryParams : (categoryParams ? [categoryParams] : []);
+
+  const whereProduct: Prisma.ProductWhereInput = {
+    active: true,
+  };
+  const whereJob: Prisma.JobPostingWhereInput = {
+    active: true,
+  };
+
+  // Genel Arama
+  if (search) {
+    whereProduct.OR = [
+      { title: { contains: search } },
+      { description: { contains: search } },
+      { category: { contains: search } }
+    ];
+    whereJob.OR = [
+      { title: { contains: search } },
+      { description: { contains: search } },
+      { location: { contains: search } }
+    ];
+  }
+
+  // Tip Filtresi
+  if (typeFilter.length > 0) {
+    const isProduct = typeFilter.includes("product");
+    const isBarter = typeFilter.includes("barter");
+    const isJob = typeFilter.includes("job");
+
+    // Product filtering logic
+    if (isProduct && isBarter) {
+        // Show all products (both barter and sale) -> No additional filter needed
+    } else if (isProduct) {
+        // Only sale products (no barter)
+        whereProduct.description = { not: { contains: "[TAKAS:" } };
+    } else if (isBarter) {
+        // Only barter products
+        whereProduct.description = { contains: "[TAKAS:" };
+    } else {
+        // Neither product nor barter selected (e.g. only job selected)
+        whereProduct.id = "no-match";
+    }
+
+    // Job filtering logic
+    if (!isJob) {
+        whereJob.id = "no-match";
+    }
+  }
+
+  // Kategori Filtresi
+  if (categoryFilter.length > 0) {
+    whereProduct.category = { in: categoryFilter };
+  }
+
+  // Konum Filtresi (İl ve İlçe)
+  if (cityParam) {
+    whereProduct.city = cityParam;
+    whereJob.city = cityParam;
+  }
+  
+  if (districtParam) {
+    whereProduct.district = districtParam;
+    whereJob.district = districtParam;
+  }
+
+  // Eski tip genel konum araması (Eğer şehir/ilçe seçilmemişse)
+  if (!cityParam && !districtParam && locationParam) {
+    whereProduct.city = { contains: locationParam }; 
+    whereJob.city = { contains: locationParam }; 
+  }
+
+  // Fiyat Aralığı Filtresi
+  if (minPriceParam !== undefined || maxPriceParam !== undefined) {
+    whereProduct.price = {};
+    if (minPriceParam !== undefined) {
+      (whereProduct.price as any).gte = minPriceParam;
+    }
+    if (maxPriceParam !== undefined) {
+      (whereProduct.price as any).lte = maxPriceParam;
+    }
+    // İş ilanları için ücret filtrelemesi
+    whereJob.wage = {};
+    if (minPriceParam !== undefined) {
+      (whereJob.wage as any).gte = minPriceParam;
+    }
+    if (maxPriceParam !== undefined) {
+      (whereJob.wage as any).lte = maxPriceParam;
+    }
+  }
+
+
   // Ürünleri Çek
   const products = await prisma.product.findMany({
-    where: {
-      active: true,
-      OR: search ? [
-        { title: { contains: search } }, // SQLite'da mode: 'insensitive' yok, büyük/küçük harf duyarlı olabilir
-        { description: { contains: search } },
-        { category: { contains: search } }
-      ] : undefined
-    },
+    where: whereProduct,
     include: { user: true },
     orderBy: { createdAt: "desc" }
   });
 
   // İş İlanlarını Çek
   const jobs = await prisma.jobPosting.findMany({
-    where: {
-      active: true,
-      OR: search ? [
-        { title: { contains: search } },
-        { description: { contains: search } },
-        { location: { contains: search } }
-      ] : undefined
-    },
+    where: whereJob,
     include: { user: true },
     orderBy: { createdAt: "desc" }
   });
@@ -47,7 +135,7 @@ async function getListings(searchParams: { [key: string]: string | string[] | un
 }
 
 export default async function ExplorePage(props: {
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>; 
 }) {
   const searchParams = await props.searchParams || {};
   const { products, jobs } = await getListings(searchParams);
@@ -56,116 +144,49 @@ export default async function ExplorePage(props: {
   const allListings = [
     ...products.map((p) => {
         const isBarter = p.description.includes("[TAKAS:");
-        // Takas fiyatını açıklamanın başından çekmeye çalışalım veya direkt fiyatı gösterelim
-        // Basitlik için: Eğer takas ise fiyat yerine "Takas Teklifi" yazalım veya description'dan parse edelim.
-        // Ama şimdilik modelde 'price' sayısal. UI'da özel gösterim yapalım.
+        const locationDisplay = [p.city, p.district].filter(Boolean).join(", ") || p.user.city || "Konum Bilgisi";
         
         return {
             id: `prod-${p.id}`,
             title: p.title,
             price: isBarter ? "Takas Teklifi" : `${p.price} ₺`,
-            location: "Konum Bilgisi", // Ürün modelinde konum yoktu, eklenebilir. Şimdilik sabit.
+            location: locationDisplay, 
             type: isBarter ? "Takas" : "Ürün",
             image: p.image || (isBarter ? "https://placehold.co/400x300/purple/white?text=Takas" : "https://placehold.co/400x300/green/white?text=Urun"),
             category: p.category,
             isBarter: isBarter,
             userName: p.user.name || "Kullanıcı"
         };
-    }),
-    ...jobs.map((j) => ({
+    }), 
+
+    ...jobs.map((j) => {
+      const locationDisplay = [j.city, j.district].filter(Boolean).join(", ") || j.location || j.user.city || "Konum Bilgisi";
+
+      return {
         id: `job-${j.id}`,
         title: j.title,
-        price: `${j.wage} ₺ / Ay`, // veya saatlik
-        location: j.location,
+        price: `${j.wage} ₺ / Ay`, 
+        location: locationDisplay,
         type: "İş İlanı",
         image: "https://placehold.co/400x300/blue/white?text=Is+Ilani",
         category: "İş Gücü",
         isBarter: false,
         userName: j.user.name || "İşveren"
-    })),
+      };
+    }), 
   ];
 
-  // (Opsiyonel) Client-side filtreleme için form submit işlemi gerekebilir.
-  // Şimdilik arama çubuğu bir form içinde olacak ve GET isteği atacak.
+  const defaultSearchQuery = typeof searchParams.q === "string" ? searchParams.q : "";
+
 
   return (
     <div className="flex flex-col min-h-screen bg-muted/20">
-      {/* Header / Search Bar */}
-      <div className="sticky top-0 z-40 bg-background border-b px-4 py-4 shadow-sm">
-        <div className="container mx-auto flex gap-4 items-center">
-          <form className="relative flex-1" action="/explore">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input 
-              name="q"
-              placeholder="Ne arıyorsunuz? (Traktör, İşçi, Tohum...)" 
-              className="pl-10 h-12 text-base"
-              defaultValue={typeof searchParams.q === "string" ? searchParams.q : ""}
-            />
-          </form>
-          <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-            <Filter className="h-4 w-4" />
-          </Button>
-          <Link href="/auth/sign-in">
-             <Button className="hidden md:inline-flex">Giriş Yap</Button>
-          </Link>
-        </div>
-      </div>
-
+      
       <div className="container mx-auto py-8 px-4 flex flex-col md:flex-row gap-8">
         {/* Sidebar Filters (Desktop) */}
-        <aside className="hidden md:flex w-64 flex-col gap-6 shrink-0">
-          <div>
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <Filter className="h-4 w-4" /> Filtreler
-            </h3>
-            
-            {/* Bu filtreler şu an görsel (dummy), çalışması için URL parametrelerine bağlanmalı */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-muted-foreground">İlan Tipi</h4>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="type-sale" />
-                <label htmlFor="type-sale" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Satılık
-                </label>
-              </div>
-               <div className="flex items-center space-x-2">
-                <Checkbox id="type-barter" className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600" />
-                <label htmlFor="type-barter" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-1 font-semibold text-purple-700">
-                  <RefreshCw className="h-3 w-3" /> Takaslık
-                </label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="type-job" />
-                <label htmlFor="type-job" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  İş İlanı
-                </label>
-              </div>
-            </div>
-
-            <Separator className="my-6" />
-
-            {/* Kategori Filtresi */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-muted-foreground">Kategoriler</h4>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="cat1" />
-                <label htmlFor="cat1" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Tahıl & Hububat
-                </label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="cat2" />
-                <label htmlFor="cat2" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Tarım Ekipmanları
-                </label>
-              </div>
-            </div>
-
-            <Separator className="my-6" />
-
-             <Button className="w-full">Filtreleri Uygula</Button>
-          </div>
-        </aside>
+        <div className="hidden md:block"> 
+          <FilterSidebar />
+        </div>
 
         {/* Listings Grid */}
         <main className="flex-1">

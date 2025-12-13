@@ -12,14 +12,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { MessageSquare, Loader2 } from "lucide-react"
+import { MessageSquare, Loader2, User } from "lucide-react"
 import { sendMessageAction } from "@/app/actions/message"
 import { toast } from "sonner"
 
-export default function MessageButton({ receiverId, listingTitle }: { receiverId: string, listingTitle: string }) {
+export default function MessageButton({ receiverId, listingTitle, currentUserId }: { receiverId: string, listingTitle: string, currentUserId?: string }) {
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState(`Merhaba, "${listingTitle}" ilanınızla ilgileniyorum.`)
   const [isPending, startTransition] = useTransition()
+
+  if (currentUserId === receiverId) {
+    return (
+        <Button className="w-full h-12 text-base font-semibold" size="lg" disabled variant="secondary">
+            <User className="mr-2 h-5 w-5" />
+            Kendi İlanınız
+        </Button>
+    )
+  }
 
   const handleSend = () => {
     startTransition(async () => {

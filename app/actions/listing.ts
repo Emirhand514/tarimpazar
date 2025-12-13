@@ -1,211 +1,157 @@
-"use server"
+"use server";
 
-import { PrismaClient } from "@prisma/client"
-import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
-import { revalidatePath } from "next/cache"
-import { writeFile, unlink } from "fs/promises"
-import { join } from "path"
+import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
-const prisma = new PrismaClient()
+interface ListingData {
+  id: string;
+  type: "product" | "job";
+  title: string;
+  description: string;
+  user: {
+    name: string | null;
+    email: string;
+  };
+  createdAt: Date;
+  active: boolean;
+}
 
-// Dosya Yükleme Yardımcısı
-async function uploadFiles(files: File[]): Promise<string[]> {
-  const uploadedPaths: string[] = []
-  const uploadDir = join(process.cwd(), "public", "uploads")
+export async function fetchAllListingsAction(query: string): Promise<ListingData[]> {
+  const currentUser = await getCurrentUser();
 
-  for (const file of files) {
-    if (file.size > 0 && file.name !== "undefined") {
-      try {
-        const bytes = await file.arrayBuffer()
-        const buffer = Buffer.from(bytes)
-        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`
-        const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '-').toLowerCase()
-        const filename = `listing-${uniqueSuffix}-${originalName}`
-        const filePath = join(uploadDir, filename)
-        
-        await writeFile(filePath, buffer)
-        uploadedPaths.push(`/uploads/${filename}`)
-      } catch (error) {
-        console.error("File upload failed:", error)
-      }
-    }
+  if (!currentUser || currentUser.role !== "ADMIN") {
+    redirect("/"); // Redirect non-admins
   }
-  return uploadedPaths
+
+  const whereClause: any = {};
+  if (query) {
+    whereClause.OR = [
+      { title: { contains: query } },
+      { description: { contains: query } },
+      { user: { name: { contains: query } } },
+      { user: { email: { contains: query } } },
+    ];
+  }
+
+  const products = await prisma.product.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      createdAt: true,
+      active: true,
+      user: {
+        select: { name: true, email: true }
+      }
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  const jobs = await prisma.jobPosting.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      createdAt: true,
+      active: true,
+      user: {
+        select: { name: true, email: true }
+      }
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  const allListings: ListingData[] = [
+    ...products.map(p => ({ ...p, type: "product" as const })),
+    ...jobs.map(j => ({ ...j, type: "job" as const })),
+  ];
+
+  return allListings.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 export async function createListingAction(formData: FormData) {
-  const cookieStore = await cookies()
-  const userId = cookieStore.get("session_user_id")?.value
+  const currentUser = await getCurrentUser();
 
-  if (!userId) {
-    return { success: false, message: "Oturum süreniz dolmuş." }
+  if (!currentUser) {
+    redirect("/auth/sign-in"); // Giriş yapmamış kullanıcıyı yönlendir
   }
 
-  const listingType = formData.get("listingType") as string
-  const title = formData.get("title") as string
-  const description = formData.get("description") as string
-  const priceRaw = formData.get("price") as string
-  const city = formData.get("city") as string
-  const district = formData.get("district") as string
-  const category = formData.get("category") as string
-  const barterDesc = formData.get("barterDesc") as string
+  const type = formData.get("type") as string; // 'product' veya 'job'
+  const title = formData.get("title") as string;
+  const description = formData.get("description") as string;
+  const city = formData.get("city") as string;
+  const district = formData.get("district") as string;
+  const contactPhone = formData.get("contactPhone") as string;
+  const images = formData.getAll("images"); // Birden fazla resim olabilir
 
-  // Fotoğrafları Al
-  const files = formData.getAll("images") as File[]
-  const uploadedImages = await uploadFiles(files)
-  
-  // İlk resmi ana resim yap, diğerlerini galeriye ekle
-  const mainImage = uploadedImages.length > 0 ? uploadedImages[0] : null
-  const allImagesStr = uploadedImages.join(",")
+  // Resim yükleme mantığı buraya eklenebilir (örneğin Cloudinary'ye)
+  // Şimdilik sadece URL'leri virgülle ayrılmış string olarak tutalım
+  const imageUrls = images.map(file => {
+    // Burada gerçek bir dosya yükleme işlemi olmalı
+    // Şimdilik placeholder URL dönüyorum
+    return file instanceof File && file.size > 0 ? `https://placeholder.com/${file.name}` : "";
+  }).filter(Boolean).join(",");
 
-  if (!title || !description || !city) {
-    return { success: false, message: "Lütfen zorunlu alanları doldurun." }
-  }
 
   try {
-    const location = `${city}, ${district}`
-    const price = parseFloat(priceRaw) || 0
+    if (type === "job") {
+      const wage = parseFloat(formData.get("wage") as string);
+      const currency = formData.get("currency") as string || "TRY";
+      const workType = formData.get("workType") as string;
 
-    if (listingType === "job" || listingType === "service") {
       await prisma.jobPosting.create({
         data: {
-          userId,
           title,
           description,
-          location,
-          wage: price,
-          workType: listingType === "service" ? "SERVICE" : "FULL_TIME",
-          images: allImagesStr
-        }
-      })
-    } else {
-      let finalDesc = description;
-      if (listingType === "barter") {
-        finalDesc = `[TAKAS: ${barterDesc}] 
-
- ${description}`
-      }
+          city,
+          district,
+          contactPhone,
+          wage,
+          currency,
+          workType,
+          images: imageUrls,
+          userId: currentUser.id,
+          active: true, // Varsayılan olarak aktif
+        },
+      });
+    } else if (type === "product") {
+      const price = parseFloat(formData.get("price") as string);
+      const currency = formData.get("currency") as string || "TRY";
+      const category = formData.get("category") as string;
 
       await prisma.product.create({
         data: {
-          userId,
           title,
-          description: finalDesc,
-          price: price,
+          description,
+          city,
+          district,
+          contactPhone,
+          price,
+          currency,
           category,
-          image: mainImage,
-          images: allImagesStr,
-          active: true
-        }
-      })
+          image: imageUrls.split(',')[0], // İlk resmi ana görsel olarak al
+          images: imageUrls,
+          userId: currentUser.id,
+          active: true, // Varsayılan olarak aktif
+        },
+      });
+    } else {
+      throw new Error("Geçersiz ilan türü belirtildi.");
     }
+
+    revalidatePath("/dashboard"); // Dashboard sayfasını yeniden doğrula
+    revalidatePath("/explore"); // İlanları incele sayfasını da yeniden doğrula
+
+    // Başarılı olursa dashboard'a yönlendir
+    redirect("/dashboard");
 
   } catch (error) {
-    console.error("Create Listing Error:", error)
-    return { success: false, message: "İlan oluşturulurken hata oluştu." }
+    console.error("İlan oluşturulurken hata oluştu:", error);
+    // Hata yönetimi: Kullanıcıya mesaj gösterme vb.
+    throw error; // Hatayı tekrar fırlat
   }
-
-  revalidatePath("/dashboard/ilanlarim")
-  revalidatePath("/explore")
-  redirect("/dashboard/ilanlarim")
-}
-
-export async function updateListingAction(formData: FormData) {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get("session_user_id")?.value
-    
-    if (!userId) return { success: false, message: "Yetkisiz işlem." }
-
-    const id = formData.get("id") as string
-    const type = formData.get("type") as string // "product" or "job"
-    const title = formData.get("title") as string
-    const description = formData.get("description") as string
-    const priceRaw = formData.get("price") as string
-    
-    // Yeni yüklenen dosyalar
-    const files = formData.getAll("newImages") as File[]
-    const newUploadedImages = await uploadFiles(files)
-    
-    // Mevcut (silinmemiş) resimlerin listesi de formdan gelebilir ama şimdilik basitleştirelim:
-    // Sadece yeni resim eklemeyi destekleyelim veya eskilerin üzerine yazalım. 
-    // Daha gelişmiş bir UI'da "bunu sil, bunu tut" yapılır.
-    // Şimdilik: Eğer yeni resim varsa eskisinin üstüne ekle.
-
-    try {
-        const price = parseFloat(priceRaw) || 0
-
-        if (type === "product") {
-            const product = await prisma.product.findUnique({ where: { id } })
-            if (!product || product.userId !== userId) return { success: false, message: "İlan bulunamadı veya yetkiniz yok." }
-
-            let updatedImages = product.images ? product.images.split(",") : []
-            if (newUploadedImages.length > 0) {
-                updatedImages = [...updatedImages, ...newUploadedImages]
-            }
-
-            await prisma.product.update({
-                where: { id },
-                data: {
-                    title,
-                    description,
-                    price,
-                    image: updatedImages[0] || product.image, // Ana resim güncelle
-                    images: updatedImages.join(",")
-                }
-            })
-        } else {
-            const job = await prisma.jobPosting.findUnique({ where: { id } })
-            if (!job || job.userId !== userId) return { success: false, message: "İlan bulunamadı veya yetkiniz yok." }
-            
-             let updatedImages = job.images ? job.images.split(",") : []
-            if (newUploadedImages.length > 0) {
-                updatedImages = [...updatedImages, ...newUploadedImages]
-            }
-
-            await prisma.jobPosting.update({
-                where: { id },
-                data: {
-                    title,
-                    description,
-                    wage: price,
-                    images: updatedImages.join(",")
-                }
-            })
-        }
-
-        revalidatePath("/dashboard/ilanlarim")
-        revalidatePath("/explore")
-        return { success: true, message: "İlan güncellendi." }
-
-    } catch (error) {
-        console.error("Update error:", error)
-        return { success: false, message: "Güncelleme başarısız." }
-    }
-}
-
-export async function deleteListingAction(id: string, type: "product" | "job") {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get("session_user_id")?.value
-    
-    if (!userId) return { success: false, message: "Yetkisiz işlem." }
-
-    try {
-        if (type === "product") {
-            const product = await prisma.product.findUnique({ where: { id } })
-            if (!product || product.userId !== userId) return { success: false, message: "Yetkisiz işlem." }
-            await prisma.product.delete({ where: { id } })
-        } else {
-             const job = await prisma.jobPosting.findUnique({ where: { id } })
-            if (!job || job.userId !== userId) return { success: false, message: "Yetkisiz işlem." }
-            await prisma.jobPosting.delete({ where: { id } })
-        }
-
-        revalidatePath("/dashboard/ilanlarim")
-        revalidatePath("/explore")
-        return { success: true, message: "İlan silindi." }
-    } catch (error) {
-         console.error("Delete error:", error)
-        return { success: false, message: "Silme işlemi başarısız." }
-    }
 }

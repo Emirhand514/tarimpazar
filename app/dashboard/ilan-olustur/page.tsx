@@ -22,11 +22,15 @@ import {
 } from "@/components/ui/select"
 import { ImagePlus, Upload, X, RefreshCw, Loader2 } from "lucide-react"
 import { createListingAction } from "@/app/actions/listing"
+import { turkeyLocations } from "@/lib/locations"
 
 export default function CreateListingPage() {
   const [listingType, setListingType] = useState("product")
   const [isPending, startTransition] = useTransition()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [selectedCity, setSelectedCity] = useState("")
+
+  const currentDistricts = turkeyLocations.find(c => c.city === selectedCity)?.districts || []
 
   // Select değerlerini formda taşımak için state veya name kullanımı biraz tricky.
   // En kolayı HTML input type="hidden" kullanmak ve select değiştikçe onu güncellemektir.
@@ -35,7 +39,7 @@ export default function CreateListingPage() {
   async function handleSubmit(formData: FormData) {
     setErrorMessage(null)
     // listingType'ı manuel ekle (state olduğu için)
-    formData.append("listingType", listingType)
+    formData.append("type", listingType)
 
     startTransition(async () => {
       const result = await createListingAction(formData)
@@ -168,29 +172,57 @@ export default function CreateListingPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>İl</Label>
-                <Select name="city">
+                <Select name="city" onValueChange={setSelectedCity}>
                   <SelectTrigger>
                     <SelectValue placeholder="İl Seçiniz" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Konya">Konya</SelectItem>
-                    <SelectItem value="Ankara">Ankara</SelectItem>
-                    <SelectItem value="Adana">Adana</SelectItem>
+                  <SelectContent className="max-h-[300px]">
+                    {turkeyLocations.map((loc) => (
+                      <SelectItem key={loc.city} value={loc.city}>
+                        {loc.city}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>İlçe</Label>
-                <Select name="district">
+                <Select name="district" disabled={!selectedCity}>
                   <SelectTrigger>
                     <SelectValue placeholder="İlçe Seçiniz" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Merkez">Merkez</SelectItem>
-                    <SelectItem value="Karatay">Karatay</SelectItem>
-                    <SelectItem value="Selçuklu">Selçuklu</SelectItem>
+                  <SelectContent className="max-h-[300px]">
+                    {currentDistricts.map((dist) => (
+                      <SelectItem key={dist} value={dist}>
+                        {dist}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            {/* İletişim Bilgileri (Opsiyonel) */}
+            <div className="space-y-2">
+              <Label htmlFor="contactPhone">İletişim Telefonu (Opsiyonel)</Label>
+              <Input 
+                id="contactPhone" 
+                name="contactPhone" 
+                placeholder="İlanınız için alternatif bir telefon numarası (örn: 05xx xxx xx xx)" 
+                type="tel"
+              />
+            </div>
+
+            {/* Fotoğraf Yükleme */}
+            <div className="space-y-2">
+              <Label htmlFor="images">Fotoğraflar</Label>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-4">
+                    <Input id="images" name="images" type="file" multiple accept="image/*" className="cursor-pointer" />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Birden fazla fotoğraf seçebilirsiniz. İlk fotoğraf kapak fotoğrafı olacaktır.
+                </p>
               </div>
             </div>
 

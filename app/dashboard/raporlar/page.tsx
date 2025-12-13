@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, MessageSquare, Package, Eye, Filter } from "lucide-react";
-import { getReportStats, getMonthlyActivity, getUserListingsForReports } from "@/app/actions/report";
+import { getReportStats, getMonthlyActivity, getUserListingsForReports } from "@/app/actions/raporlar";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -103,6 +103,7 @@ export default function ReportsPage() {
             </p>
           </CardContent>
         </Card>
+        {stats.estimatedRevenue !== null && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Toplam Kazanç (Tahmini)</CardTitle>
@@ -115,6 +116,7 @@ export default function ReportsPage() {
             </p>
           </CardContent>
         </Card>
+        )}
       </div>
 
       {/* Grafik Alanları */}
@@ -135,7 +137,7 @@ export default function ReportsPage() {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent }: { name: string; percent?: number }) => `${name} ${(percent ? percent * 100 : 0).toFixed(0)}%`}
+                  label={({ name, percent }: { name?: string | number; percent?: number }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                 >
                   {listingStatusData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

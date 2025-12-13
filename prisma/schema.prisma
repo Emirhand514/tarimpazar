@@ -6,9 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL") // Uses connection pooling
-  directUrl = env("POSTGRES_URL_NON_POOLING") // Uses a direct connection
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 // Kullanıcı Modeli
@@ -38,6 +37,95 @@ model User {
   messagesReceived Message[] @relation("ReceivedMessages")
   conversationsAsP1 Conversation[] @relation("ConversationParticipant1")
   conversationsAsP2 Conversation[] @relation("ConversationParticipant2")
+  favorites     Favorite[]
+  favoriteGroups FavoriteGroup[]
+  
+  // Engelleme İlişkileri
+  blockedUsers  Block[]   @relation("UserBlocks")
+  blockedBy     Block[]   @relation("BlockedUsers")
+  
+  // Bildirimler
+  notifications Notification[]
+
+  // Şikayetler
+  reportsSubmitted Report[] @relation("SubmittedReports")
+  reportsReceived  Report[] @relation("ReceivedReports")
+
+  // Ban ve Kısıtlama Bilgileri
+  isBanned         Boolean    @default(false)
+  bannedUntil      DateTime?
+  banReason        String?
+  isRestricted     Boolean    @default(false)
+  restrictionReason String?
+  
+  // Duyurular
+  announcements Announcement[] @relation("CreatedAnnouncements")
+}
+
+// Bildirim Modeli
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, SUCCESS, WARNING, ERROR
+  isRead    Boolean  @default(false)
+  link      String?  // Bildirime tıklandığında gidilecek URL
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Engelleme Modeli
+model Block {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  blockerId String
+  blocker   User     @relation("UserBlocks", fields: [blockerId], references: [id])
+
+  blockedId String
+  blocked   User     @relation("BlockedUsers", fields: [blockedId], references: [id])
+
+  @@unique([blockerId, blockedId])
+}
+
+// Favori Grupları
+model FavoriteGroup {
+  id        String     @id @default(cuid())
+  name      String
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  favorites Favorite[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([userId, name])
+}
+
+// Favoriler Modeli
+model Favorite {
+  id            String      @id @default(cuid())
+  createdAt     DateTime    @default(now())
+  
+  user          User        @relation(fields: [userId], references: [id])
+  userId        String
+
+  // Gruplandırma
+  groupId       String?
+  group         FavoriteGroup? @relation(fields: [groupId], references: [id])
+
+  // Optional relations
+  product       Product?    @relation(fields: [productId], references: [id])
+  productId     String?
+
+  jobPosting    JobPosting? @relation(fields: [jobPostingId], references: [id])
+  jobPostingId  String?
+
+  @@unique([userId, productId])
+  @@unique([userId, jobPostingId])
 }
 
 // İş İlanları (İstihdam Modülü)
@@ -45,7 +133,10 @@ model JobPosting {
   id          String    @id @default(cuid())
   title       String
   description String
-  location    String    // İl/İlçe
+  location    String?   // @deprecated
+  city        String?
+  district    String?
+  contactPhone String? // New optional contact phone for the listing
   wage        Decimal   // Ücret
   currency    String    @default("TRY")
   workType    String    // Tam zamanlı, Mevsimlik vb.
@@ -57,6 +148,8 @@ model JobPosting {
   // İlişkiler
   userId      String
   user        User      @relation(fields: [userId], references: [id])
+  favoritedBy Favorite[]
+  reports     Report[]
 }
 
 // Ürün İlanları (Market Modülü)
@@ -67,6 +160,9 @@ model Product {
   price       Decimal
   currency    String    @default("TRY")
   category    String    // Tohum, Gübre, Traktör vb.
+  city        String?
+  district    String?
+  contactPhone String? // New optional contact phone for the listing
   image       String?   // Ana görsel (Thumbnail)
   images      String?   // Galeri görselleri (Virgülle ayrılmış URL listesi)
   active      Boolean   @default(true)
@@ -76,6 +172,8 @@ model Product {
   // İlişkiler
   userId      String
   user        User      @relation(fields: [userId], references: [id])
+  favoritedBy Favorite[]
+  reports     Report[]
 }
 
 // Mesajlaşma Modülleri
@@ -107,4 +205,39 @@ model Message {
 
   conversationId  String
   conversation    Conversation @relation("ConversationMessages", fields: [conversationId], references: [id])
+}
+
+// Şikayet Modeli
+model Report {
+  id        String   @id @default(cuid())
+  reporterId String
+  reporter  User     @relation("SubmittedReports", fields: [reporterId], references: [id])
+  
+  reportedId String
+  reported  User     @relation("ReceivedReports", fields: [reportedId], references: [id])
+  
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  
+  jobPostingId String?
+  jobPosting JobPosting? @relation(fields: [jobPostingId], references: [id])
+  
+  reason    String
+  status    String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Duyuru Modeli
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  authorId  String
+  author    User     @relation("CreatedAnnouncements", fields: [authorId], references: [id])
+  targetRoles String? // Virgülle ayrılmış roller (örn: "FARMER,BUSINESS") veya null ise herkese
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -61,7 +61,7 @@ export default function SignUpPage() {
               <input type="radio" name="role" value="merchant" className="peer sr-only" />
               <div className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
                 <Briefcase className="mb-2 h-6 w-6" />
-                <span className="text-xs font-semibold">Tüccar</span>
+                <span className="text-xs font-semibold">İşletme</span>
               </div>
             </label>
           </div>

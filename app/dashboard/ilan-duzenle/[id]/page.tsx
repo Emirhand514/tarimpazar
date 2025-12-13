@@ -34,6 +34,8 @@ export default async function EditListingPage(props: { params: Promise<{ id: str
     ...listing,
     // @ts-ignore
     price: listing.price ? listing.price.toString() : (listing.wage ? listing.wage.toString() : "0"),
+    // @ts-ignore
+    wage: listing.wage ? listing.wage.toString() : null, 
     createdAt: listing.createdAt.toISOString(),
     updatedAt: listing.updatedAt.toISOString(),
   };

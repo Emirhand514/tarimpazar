@@ -15,10 +15,21 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, Save, ImagePlus } from "lucide-react"
 import { toast } from "sonner"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { turkeyLocations } from "@/lib/locations"
 
 export default function EditListingForm({ listing }: { listing: any }) {
   const [isPending, startTransition] = useTransition()
   const [images, setImages] = useState<string[]>(listing.images ? listing.images.split(",") : [])
+  const [selectedCity, setSelectedCity] = useState(listing.city || "")
+
+  const currentDistricts = turkeyLocations.find(c => c.city === selectedCity)?.districts || []
 
   const handleSubmit = async (formData: FormData) => {
     formData.append("id", listing.id)
@@ -64,6 +75,52 @@ export default function EditListingForm({ listing }: { listing: any }) {
               <span className="absolute left-3 top-2.5 text-muted-foreground">₺</span>
               <Input id="price" name="price" className="pl-7" defaultValue={listing.price} />
             </div>
+          </div>
+
+          {/* Konum */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>İl</Label>
+              <Select name="city" defaultValue={selectedCity} onValueChange={setSelectedCity}>
+                <SelectTrigger>
+                  <SelectValue placeholder="İl Seçiniz" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {turkeyLocations.map((loc) => (
+                    <SelectItem key={loc.city} value={loc.city}>
+                      {loc.city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>İlçe</Label>
+              <Select name="district" defaultValue={listing.district} disabled={!selectedCity}>
+                <SelectTrigger>
+                  <SelectValue placeholder="İlçe Seçiniz" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {currentDistricts.map((dist) => (
+                    <SelectItem key={dist} value={dist}>
+                      {dist}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* İletişim Bilgileri (Opsiyonel) */}
+          <div className="space-y-2">
+            <Label htmlFor="contactPhone">İletişim Telefonu (Opsiyonel)</Label>
+            <Input 
+              id="contactPhone" 
+              name="contactPhone" 
+              placeholder="İlanınız için alternatif bir telefon numarası (örn: 05xx xxx xx xx)" 
+              type="tel"
+              defaultValue={listing.contactPhone || ""}
+            />
           </div>
 
           {/* Galeri Önizleme */}
