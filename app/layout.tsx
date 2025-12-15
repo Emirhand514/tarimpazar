@@ -61,6 +61,11 @@ export const metadata = {
     // Google Search Console verification kodu buraya eklenecek
     // google: "verification_token_here",
   },
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
+  },
 };
 
 export default async function RootLayout({
