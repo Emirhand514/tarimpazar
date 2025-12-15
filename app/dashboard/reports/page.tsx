@@ -234,20 +234,32 @@ export default function AdminReportsPage() {
               {(selectedReport.product || selectedReport.jobPosting) && (
                 <div>
                   <h4 className="font-semibold mb-2">İlan Bilgileri:</h4>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">
-                      {(selectedReport.product || selectedReport.jobPosting)?.title}
-                    </p>
-                    <Link 
-                      href={`/ilan/${selectedReport.product ? 'prod' : 'job'}-${selectedReport.productId || selectedReport.jobPostingId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button variant="outline" className="w-full sm:w-auto">
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        İlanı Görüntüle
+                  <div className="space-y-3 p-3 bg-muted/50 rounded-lg border">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Başlık:</p>
+                      <p className="text-sm font-medium">
+                        {(selectedReport.product || selectedReport.jobPosting)?.title}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Link 
+                        href={`/ilan/${selectedReport.product ? 'prod' : 'job'}-${selectedReport.productId || selectedReport.jobPostingId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button variant="default" className="w-full sm:w-auto">
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          İlanı Görüntüle
+                        </Button>
+                      </Link>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => router.push(`/dashboard/admin/listings?q=${(selectedReport.product || selectedReport.jobPosting)?.title}`)}
+                        className="w-full sm:w-auto"
+                      >
+                        Admin Panelde Aç
                       </Button>
-                    </Link>
+                    </div>
                   </div>
                 </div>
               )}

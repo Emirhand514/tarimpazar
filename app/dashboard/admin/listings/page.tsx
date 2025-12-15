@@ -104,7 +104,14 @@ export default function AdminListingsPage() {
       setOpenDeleteDialog(false);
       startTransition(async () => { // Re-fetch listings to update table
         const fetchedListings = await fetchAllListingsAction(searchQuery);
-        setListings(fetchedListings);
+        // Filter by status
+        let filteredListings = fetchedListings;
+        if (statusFilter === "active") {
+          filteredListings = fetchedListings.filter(listing => listing.active);
+        } else if (statusFilter === "inactive") {
+          filteredListings = fetchedListings.filter(listing => !listing.active);
+        }
+        setListings(filteredListings);
       });
     } else {
       toast({ title: "Hata", description: result.message, variant: "destructive" });
@@ -120,7 +127,14 @@ export default function AdminListingsPage() {
       setOpenToggleStatusDialog(false);
       startTransition(async () => { // Re-fetch listings to update table
         const fetchedListings = await fetchAllListingsAction(searchQuery);
-        setListings(fetchedListings);
+        // Filter by status
+        let filteredListings = fetchedListings;
+        if (statusFilter === "active") {
+          filteredListings = fetchedListings.filter(listing => listing.active);
+        } else if (statusFilter === "inactive") {
+          filteredListings = fetchedListings.filter(listing => !listing.active);
+        }
+        setListings(filteredListings);
       });
     } else {
       toast({ title: "Hata", description: result.message, variant: "destructive" });
