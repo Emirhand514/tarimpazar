@@ -398,9 +398,17 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
                             <User className="h-4 w-4" />
                             <span>Üyelik Tarihi: {listing.user.createdAt.toLocaleDateString("tr-TR")}</span>
                         </div>
-                        {/* Report Button */}
+                        {/* Report User Button */}
                         {currentUser && currentUser.id !== listing.userId && (
                             <ReportButton reportedUserId={listing.userId} isLoggedIn={!!currentUser} className="w-full" />
+                        )}
+                        {/* Report Listing Button */}
+                        {currentUser && currentUser.id !== listing.userId && (
+                            <ReportListingButton 
+                                reportedUserId={listing.userId}
+                                reportedListingId={listingId}
+                                isLoggedIn={!!currentUser}
+                            />
                         )}
                     </div>
                 </CardContent>
