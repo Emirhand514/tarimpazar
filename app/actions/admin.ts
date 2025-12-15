@@ -194,6 +194,69 @@ export async function toggleMyListingStatusAction(listingId: string, type: "prod
   }
 }
 
+// Admin: Kullanıcı Profil Bilgilerini Güncelleme
+export async function updateUserProfileByAdminAction(userId: string, formData: FormData) {
+  try {
+    await checkAdmin();
+
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const role = formData.get("role") as string;
+    const phone = formData.get("phone") as string;
+    const bio = formData.get("bio") as string;
+    const city = formData.get("city") as string;
+    const district = formData.get("district") as string;
+    const crops = formData.get("crops") as string;
+    const certificates = formData.get("certificates") as string;
+
+    // Email değiştiriliyorsa ve farklı bir email ise, başka kullanıcıda kullanılıyor mu kontrol et
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+
+    if (!existingUser) {
+      return { success: false, message: "Kullanıcı bulunamadı." };
+    }
+
+    if (email && email !== existingUser.email) {
+      const emailExists = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+      });
+      
+      if (emailExists && emailExists.id !== userId) {
+        return { success: false, message: "Bu e-posta adresi başka bir kullanıcı tarafından kullanılıyor." };
+      }
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: name || null,
+        email: email ? email.toLowerCase() : existingUser.email,
+        role: role || "FARMER",
+        phone: phone || null,
+        bio: bio || null,
+        city: city || null,
+        district: district || null,
+        crops: crops || null,
+        certificates: certificates || null,
+      },
+    });
+
+    revalidatePath("/dashboard/users");
+    return { success: true, message: "Kullanıcı profili başarıyla güncellendi." };
+  } catch (error: any) {
+    console.error("Update user profile by admin error:", error);
+    
+    if (error.code === 'P2002') {
+      return { success: false, message: "Bu e-posta adresi zaten kullanılıyor." };
+    }
+    
+    return { success: false, message: error.message || "Kullanıcı profili güncellenirken bir hata oluştu." };
+  }
+}
+
 // Admin: İlanın Aktif Durumunu Değiştirme (Gizle/Yayınla)
 export async function toggleListingActiveStatusAction(listingId: string, type: "product" | "job", newStatus: boolean) {
   try {

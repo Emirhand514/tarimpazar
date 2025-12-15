@@ -7,7 +7,8 @@ import { format, addDays, isAfter } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button"; // Add missing Button import
-import { Search, MoreHorizontal, Ban, Unlock, UserMinus, UserPlus, Trash2, CalendarIcon, Loader2 } from "lucide-react";
+import { Search, MoreHorizontal, Ban, Unlock, UserMinus, UserPlus, Trash2, CalendarIcon, Loader2, Edit } from "lucide-react";
+import EditUserDialog from "./edit-user-dialog";
 import { useEffect, useState, useTransition } from "react";
 import { fetchUsersAction } from "@/app/actions/user"; // Import the server action
 import { banUserAction, unbanUserAction, restrictUserAction, unrestrictUserAction, deleteListingAction } from "@/app/actions/admin"; // Import admin actions
@@ -65,6 +66,7 @@ export default function AdminUsersPage() {
   const [openUnbanDialog, setOpenUnbanDialog] = useState(false);
   const [openRestrictDialog, setOpenRestrictDialog] = useState(false);
   const [openUnrestrictDialog, setOpenUnrestrictDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
 
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [banReason, setBanReason] = useState("");
@@ -236,6 +238,10 @@ export default function AdminUsersPage() {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => { setSelectedUser(user); setOpenEditDialog(true); }}>
+                                            <Edit className="mr-2 h-4 w-4" /> Profili Düzenle
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
                                         {/* Ban/Unban */}
                                         {!user.isBanned || !isAfter(new Date(user.bannedUntil!), new Date()) ? (
                                             <DropdownMenuItem onClick={() => { setSelectedUser(user); setOpenBanDialog(true); }}>

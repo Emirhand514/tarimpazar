@@ -14,6 +14,9 @@ interface UserData {
   district: string | null;
   createdAt: Date;
   phone: string | null;
+  bio: string | null;
+  crops: string | null;
+  certificates: string | null;
   isBanned: boolean;
   bannedUntil: Date | null;
   banReason: string | null;
@@ -47,6 +50,9 @@ export async function fetchUsersAction(query: string): Promise<UserData[]> {
       district: true,
       createdAt: true,
       phone: true,
+      bio: true,
+      crops: true,
+      certificates: true,
       isBanned: true,
       bannedUntil: true,
       banReason: true,

@@ -103,16 +103,16 @@ export default function ReportsPage() {
             </p>
           </CardContent>
         </Card>
-        {stats.estimatedRevenue !== null && (
+        {stats.totalValue !== null && stats.totalValue > 0 && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Toplam Kazanç (Tahmini)</CardTitle>
+            <CardTitle className="text-sm font-medium">Aktif Ürünler Toplam Değeri</CardTitle>
             <DollarSign className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₺{stats.estimatedRevenue}</div>
+            <div className="text-2xl font-bold">₺{stats.totalValue.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <p className="text-xs text-muted-foreground">
-              Aktif ürün satışlarından
+              Aktif ilanlarınızın toplam değeri
             </p>
           </CardContent>
         </Card>
