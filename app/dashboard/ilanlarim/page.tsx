@@ -39,7 +39,14 @@ export default async function MyListingsPage() {
         return {
             id: p.id,
             title: p.title,
-            price: `${p.price} ₺`,
+            price: (typeof p.price === 'number' || (typeof p.price === 'string' && p.price !== '') 
+              ? new Intl.NumberFormat('tr-TR', {
+                  style: 'currency',
+                  currency: 'TRY',
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }).format(typeof p.price === 'string' ? parseFloat(p.price) : p.price)
+              : '0,00 TL'),
             location: "Konum Bilgisi", 
             status: p.active ? "active" : "passive",
             image: images[0] || p.image || "https://placehold.co/400x300/e2e8f0/1e293b?text=No+Image",
@@ -52,7 +59,14 @@ export default async function MyListingsPage() {
         return {
             id: j.id,
             title: j.title,
-            price: `${j.wage} ₺`,
+            price: (typeof j.wage === 'number' || (typeof j.wage === 'string' && j.wage !== '') 
+              ? new Intl.NumberFormat('tr-TR', {
+                  style: 'currency',
+                  currency: 'TRY',
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }).format(typeof j.wage === 'string' ? parseFloat(j.wage) : j.wage)
+              : '0,00 TL'),
             location: j.location,
             status: j.active ? "active" : "passive",
             image: images[0] || "https://placehold.co/400x300/dbeafe/1e40af?text=Is+Ilani",

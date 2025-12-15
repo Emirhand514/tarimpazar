@@ -129,6 +129,16 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
   const isBarter = listing.type === "product" && listing.description.includes("[TAKAS:");
   // @ts-ignore - Prisma tipleri dynamic return ile bazen karışabilir, basitleştiriyoruz
   const price = listing.type === "product" ? listing.price : listing.wage;
+  
+  // Format price with Turkish Lira format
+  const formattedPrice = typeof price === 'number' || (typeof price === 'string' && price !== '') 
+    ? new Intl.NumberFormat('tr-TR', {
+        style: 'currency',
+        currency: 'TRY',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(typeof price === 'string' ? parseFloat(price) : price)
+    : '0,00 TL';
   // @ts-ignore
   const location = listing.type === "product" ? (listing.city ? `${listing.city}, ${listing.district}` : "Konum Bilgisi Alınamadı") : 
                    (listing.city ? `${listing.city}, ${listing.district}` : (listing.location || "Konum Bilgisi Alınamadı"));
@@ -348,7 +358,7 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
                         {isBarter ? "Takas Değeri / Koşulu" : "Fiyat"}
                     </p>
                     <p className="text-3xl font-bold tracking-tight">
-                        {isBarter ? "Teklif Usulü" : `${price} ₺`}
+                        {isBarter ? "Teklif Usulü" : formattedPrice}
                     </p>
                 </div>
                 <CardContent className="p-6 grid gap-3">

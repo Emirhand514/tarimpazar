@@ -173,7 +173,14 @@ export default async function ExplorePage(props: {
         return {
             id: `prod-${p.id}`,
             title: p.title,
-            price: isBarter ? "Takas Teklifi" : `${p.price} ₺`,
+            price: isBarter ? "Takas Teklifi" : (typeof p.price === 'number' || (typeof p.price === 'string' && p.price !== '') 
+                ? new Intl.NumberFormat('tr-TR', {
+                    style: 'currency',
+                    currency: 'TRY',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(typeof p.price === 'string' ? parseFloat(p.price) : p.price)
+                : '0,00 TL'),
             location: locationDisplay, 
             type: isBarter ? "Takas" : "Ürün",
             image: p.image || (isBarter ? "https://placehold.co/400x300/purple/white?text=Takas" : "https://placehold.co/400x300/green/white?text=Urun"),
@@ -189,7 +196,14 @@ export default async function ExplorePage(props: {
       return {
         id: `job-${j.id}`,
         title: j.title,
-        price: `${j.wage} ₺ / Ay`, 
+        price: (typeof j.wage === 'number' || (typeof j.wage === 'string' && j.wage !== '') 
+          ? new Intl.NumberFormat('tr-TR', {
+              style: 'currency',
+              currency: 'TRY',
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }).format(typeof j.wage === 'string' ? parseFloat(j.wage) : j.wage)
+          : '0,00 TL') + ' / Ay', 
         location: locationDisplay,
         type: "İş İlanı",
         image: "https://placehold.co/400x300/blue/white?text=Is+Ilani",

@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { logoutAction } from "@/app/actions/auth";
 import { getRoleLabel } from "@/lib/roles";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
 
 type UserType = {
     id: string;
@@ -119,6 +121,11 @@ export function MasterHeader({ user }: { user: UserType }) {
             {/* AUTH ACTIONS */}
             {!user ? (
                 <div className="flex items-center gap-2">
+                    {/* Theme Toggle */}
+                    <ThemeToggle />
+                    
+                    {/* Language Toggle */}
+                    <LanguageToggle />
                     <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
                         <Link href="/auth/sign-in">Giriş Yap</Link>
                     </Button>
@@ -127,7 +134,13 @@ export function MasterHeader({ user }: { user: UserType }) {
                     </Button>
                 </div>
             ) : (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                     {/* Theme Toggle */}
+                     <ThemeToggle />
+                     
+                     {/* Language Toggle */}
+                     <LanguageToggle />
+                     
                      {/* Favoriler Butonu */}
                      <Button asChild variant="ghost" size="icon" className="relative text-muted-foreground hover:text-red-500">
                         <Link href="/dashboard/favoriler">
