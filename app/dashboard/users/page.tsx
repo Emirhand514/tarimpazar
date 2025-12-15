@@ -393,6 +393,18 @@ export default function AdminUsersPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Edit User Dialog */}
+      <EditUserDialog
+        user={selectedUser}
+        open={openEditDialog}
+        onOpenChange={setOpenEditDialog}
+        onSuccess={() => {
+          startTransition(async () => {
+            const fetchedUsers = await fetchUsersAction(searchQuery);
+            setUsers(fetchedUsers);
+          });
+        }}
+      />
     </div>
   );
 }
