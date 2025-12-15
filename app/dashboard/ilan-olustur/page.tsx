@@ -43,6 +43,18 @@ export default function CreateListingPage() {
     const formData = new FormData(e.currentTarget);
     formData.append("type", listingType);
 
+    // Images input'undan tüm dosyaları al ve FormData'ya ekle
+    const imagesInput = e.currentTarget.querySelector<HTMLInputElement>('input[name="images"]');
+    if (imagesInput && imagesInput.files) {
+      // Mevcut "images" entry'lerini temizle
+      formData.delete("images");
+      // Tüm seçili dosyaları ekle
+      for (let i = 0; i < imagesInput.files.length; i++) {
+        formData.append("images", imagesInput.files[i]);
+      }
+      console.log(`Added ${imagesInput.files.length} image(s) to FormData`);
+    }
+
     // Debug: FormData içeriğini kontrol et
     console.log("FormData entries:");
     for (const [key, value] of formData.entries()) {

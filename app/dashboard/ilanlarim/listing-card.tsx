@@ -97,6 +97,18 @@ export default function ListingCard({ listing }: { listing: any }) {
                     </Link>
                 </DropdownMenuItem>
                 
+                <DropdownMenuItem onClick={handleToggleStatus} className="cursor-pointer">
+                    {listing.status === "active" ? (
+                        <>
+                            <EyeOff className="mr-2 h-4 w-4" /> Pasif Yap
+                        </>
+                    ) : (
+                        <>
+                            <Power className="mr-2 h-4 w-4" /> Aktif Yap
+                        </>
+                    )}
+                </DropdownMenuItem>
+                
                 <DropdownMenuSeparator />
                 
                 <DropdownMenuItem 

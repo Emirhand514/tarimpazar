@@ -53,7 +53,7 @@ export default function EditListingForm({ listing }: { listing: any }) {
   }
 
   return (
-    <form action={handleSubmit}>
+    <form action={handleSubmit} encType="multipart/form-data">
       <Card>
         <CardHeader>
           <CardTitle>İlan Detayları</CardTitle>

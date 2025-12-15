@@ -216,12 +216,33 @@ export async function updateListingAction(formData: FormData) {
   const city = formData.get("city") as string;
   const district = formData.get("district") as string;
   const contactPhone = formData.get("contactPhone") as string;
-  const images = formData.getAll("images"); // Yeni veya mevcut resimler
+  
+  // Mevcut ilanı al
+  let existingListing: any = null;
+  if (type === "product") {
+    existingListing = await prisma.product.findUnique({
+      where: { id, userId: currentUser.id },
+      select: { images: true },
+    });
+  } else if (type === "job") {
+    existingListing = await prisma.jobPosting.findUnique({
+      where: { id, userId: currentUser.id },
+      select: { images: true },
+    });
+  }
+  
+  // Mevcut resimleri al
+  const existingImages = existingListing?.images ? existingListing.images.split(",").filter(Boolean) : [];
+  
+  // Yeni resimleri al (hem "images" hem "newImages" olabilir)
+  const newImages = formData.getAll("newImages");
+  const images = formData.getAll("images");
+  const allNewImages = [...newImages, ...images].filter(img => img instanceof File && img.size > 0);
 
   // Resim yükleme işlemi
-  const imageUrls: string[] = [];
+  const imageUrls: string[] = [...existingImages]; // Mevcut resimleri koru
   
-  for (const imageFile of images) {
+  for (const imageFile of allNewImages) {
     if (imageFile && imageFile instanceof File && imageFile.size > 0) {
       try {
         const bytes = await imageFile.arrayBuffer();
