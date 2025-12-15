@@ -22,6 +22,7 @@ export default function ChatView({ conversationId, partner, initialMessages, ini
   const [messages, setMessages] = useState(initialMessages)
   const [newMessage, setNewMessage] = useState("")
   const [isSending, setIsSending] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
