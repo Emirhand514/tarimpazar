@@ -278,7 +278,7 @@ export async function updateListingAction(formData: FormData) {
           price,
           currency,
           category,
-          image: imageUrls.split(',')[0],
+          image: imageUrlsString.split(',')[0] || "",
           images: imageUrlsString || "",
           active,
         },
