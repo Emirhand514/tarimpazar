@@ -91,6 +91,8 @@ export async function createListingAction(formData: FormData) {
   const contactPhone = (formData.get("contactPhone") as string) || "";
   const images = formData.getAll("images"); // Birden fazla resim olabilir
 
+  console.log("Images from FormData:", images.length, "files");
+
   // Validasyon
   if (!title || !description || !city || !district) {
     throw new Error("Lütfen tüm zorunlu alanları doldurun.");
@@ -101,7 +103,8 @@ export async function createListingAction(formData: FormData) {
   
   for (const imageFile of images) {
     // FormData'dan gelen file'ı kontrol et
-    if (imageFile instanceof File && imageFile.size > 0 && imageFile.name) {
+    if (imageFile instanceof File && imageFile.size > 0) {
+      console.log("Processing image file:", imageFile.name, imageFile.size, imageFile.type);
       try {
         const bytes = await imageFile.arrayBuffer();
         const buffer = Buffer.from(bytes);

@@ -25,6 +25,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { deleteReportAction } from "@/app/actions/admin";
 import { fetchReportsAction } from "@/app/actions/reports";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +44,7 @@ export default function AdminReportsPage() {
 
   const [reports, setReports] = useState<any[]>([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [openDetailDialog, setOpenDetailDialog] = useState(false);
   const [selectedReport, setSelectedReport] = useState<any | null>(null);
 
   // Initial fetch on component mount
@@ -126,7 +134,18 @@ export default function AdminReportsPage() {
                                             "N/A"
                                         )}
                                     </TableCell>
-                                    <TableCell className="max-w-xs truncate">{report.reason}</TableCell>
+                                    <TableCell className="max-w-xs">
+                                      <Button 
+                                        variant="link" 
+                                        className="p-0 h-auto text-left"
+                                        onClick={() => {
+                                          setSelectedReport(report);
+                                          setOpenDetailDialog(true);
+                                        }}
+                                      >
+                                        <span className="max-w-xs truncate block">{report.reason || "Detay yok"}</span>
+                                      </Button>
+                                    </TableCell>
                                     <TableCell>
                                         <Badge variant={getStatusBadgeVariant(report.status)} className="capitalize">
                                             {report.status === "PENDING" ? "Beklemede" : report.status === "RESOLVED" ? "Çözüldü" : "Reddedildi"}
@@ -162,6 +181,64 @@ export default function AdminReportsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Detail Dialog */}
+      <Dialog open={openDetailDialog} onOpenChange={setOpenDetailDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Şikayet Detayları</DialogTitle>
+            <DialogDescription>
+              Şikayet ile ilgili tüm detaylar
+            </DialogDescription>
+          </DialogHeader>
+          {selectedReport && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">Şikayet Eden:</h4>
+                <p className="text-sm text-muted-foreground">
+                  {selectedReport.reporter?.name || selectedReport.reporter?.email || "Bilinmiyor"}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Şikayet Edilen:</h4>
+                <p className="text-sm text-muted-foreground">
+                  {selectedReport.reported?.name || selectedReport.reported?.email || "Bilinmiyor"}
+                </p>
+              </div>
+              {(selectedReport.product || selectedReport.jobPosting) && (
+                <div>
+                  <h4 className="font-semibold mb-2">İlan:</h4>
+                  <Link 
+                    href={`/ilan/${selectedReport.product ? 'prod' : 'job'}-${selectedReport.productId || selectedReport.jobPostingId}`}
+                    className="text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <Eye className="h-4 w-4" /> 
+                    {(selectedReport.product || selectedReport.jobPosting)?.title}
+                  </Link>
+                </div>
+              )}
+              <div>
+                <h4 className="font-semibold mb-2">Şikayet Sebebi:</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {selectedReport.reason || "Sebep belirtilmemiş"}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Durum:</h4>
+                <Badge variant={getStatusBadgeVariant(selectedReport.status)} className="capitalize">
+                  {selectedReport.status === "PENDING" ? "Beklemede" : selectedReport.status === "RESOLVED" ? "Çözüldü" : "Reddedildi"}
+                </Badge>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Tarih:</h4>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(selectedReport.createdAt), "dd MMMM yyyy, HH:mm", { locale: tr })}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Report Dialog */}
       <AlertDialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>

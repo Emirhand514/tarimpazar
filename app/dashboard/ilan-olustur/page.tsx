@@ -43,6 +43,16 @@ export default function CreateListingPage() {
     const formData = new FormData(e.currentTarget);
     formData.append("type", listingType);
 
+    // Debug: FormData içeriğini kontrol et
+    console.log("FormData entries:");
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`${key}:`, value.name, value.size, value.type);
+      } else {
+        console.log(`${key}:`, value);
+      }
+    }
+
     startTransition(async () => {
       try {
         await createListingAction(formData);

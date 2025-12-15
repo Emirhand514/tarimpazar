@@ -55,17 +55,16 @@ export default function ProfileForm({ user }: { user: any }) {
     const formData = new FormData(e.currentTarget)
     
     // File'ı state'ten veya input'tan al ve FormData'ya ekle
-    if (selectedFile) {
-      formData.set("image", selectedFile)
-      console.log("Image added to formData from state:", selectedFile.name, selectedFile.size)
+    // Önce state'teki file'ı kontrol et, yoksa input'tan al
+    const fileToUpload = selectedFile || (fileInputRef.current?.files?.[0] || null);
+    
+    if (fileToUpload && fileToUpload instanceof File && fileToUpload.size > 0) {
+      // Mevcut "image" entry'sini sil ve yenisini ekle
+      formData.delete("image");
+      formData.append("image", fileToUpload);
+      console.log("Image added to formData:", fileToUpload.name, fileToUpload.size, fileToUpload.type);
     } else {
-      const fileInput = fileInputRef.current
-      if (fileInput && fileInput.files && fileInput.files[0]) {
-        formData.set("image", fileInput.files[0])
-        console.log("Image added to formData from input:", fileInput.files[0].name)
-      } else {
-        console.log("No file selected")
-      }
+      console.log("No file selected or file is empty");
     }
 
     startTransition(async () => {

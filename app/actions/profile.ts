@@ -25,12 +25,21 @@ export async function updateUserProfileAction(formData: FormData) {
   const district = formData.get("district") as string;
   const crops = formData.get("crops") as string; // Virgülle ayrılmış ürünler
   const certificates = formData.get("certificates") as string; // Virgülle ayrılmış sertifikalar
-  const imageFile = formData.get("image") as File | null;
+  const imageFile = formData.get("image");
+  
+  // FormData'dan gelen değeri kontrol et
+  let actualImageFile: File | null = null;
+  if (imageFile instanceof File && imageFile.size > 0) {
+    actualImageFile = imageFile;
+  } else if (typeof imageFile === "string" && imageFile.length > 0) {
+    // Eğer string gelirse (eski URL), dosya yok demektir
+    console.log("Image is a string (existing URL), not a new file");
+  }
 
-  console.log("Image file received:", imageFile ? {
-    name: imageFile.name,
-    size: imageFile.size,
-    type: imageFile.type
+  console.log("Image file received:", actualImageFile ? {
+    name: actualImageFile.name,
+    size: actualImageFile.size,
+    type: actualImageFile.type
   } : "No file");
 
   // İsim birleştirme (eğer firstName ve lastName varsa)
@@ -39,13 +48,13 @@ export async function updateUserProfileAction(formData: FormData) {
   let imageUrl = currentUser.image; // Mevcut resmi koru
 
   // Resim yükleme işlemi
-  if (imageFile && imageFile.size > 0 && imageFile instanceof File) {
+  if (actualImageFile) {
     try {
-      const bytes = await imageFile.arrayBuffer();
+      const bytes = await actualImageFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
       // Dosya uzantısı
-      const ext = imageFile.name.split('.').pop() || 'jpg';
+      const ext = actualImageFile.name.split('.').pop() || 'jpg';
       const filename = `${currentUser.id}-${Date.now()}.${ext}`;
       
       // Upload klasörünü oluştur
