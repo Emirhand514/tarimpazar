@@ -144,7 +144,7 @@ export async function createListingAction(formData: FormData) {
           wage,
           currency,
           workType,
-          images: imageUrlsString,
+          images: imageUrlsString || "",
           userId: currentUser.id,
           active: true, // Varsayılan olarak aktif
         },
@@ -165,7 +165,7 @@ export async function createListingAction(formData: FormData) {
           currency,
           category,
           image: imageUrlsString.split(',')[0] || "", // İlk resmi ana görsel olarak al
-          images: imageUrlsString,
+          images: imageUrlsString || "",
           userId: currentUser.id,
           active: true, // Varsayılan olarak aktif
         },
@@ -203,10 +203,41 @@ export async function updateListingAction(formData: FormData) {
   const contactPhone = formData.get("contactPhone") as string;
   const images = formData.getAll("images"); // Yeni veya mevcut resimler
 
-  // Resim yükleme mantığı buraya eklenebilir
-  const imageUrls = images.map(file => {
-    return file instanceof File && file.size > 0 ? `https://placeholder.com/${file.name}` : "";
-  }).filter(Boolean).join(",");
+  // Resim yükleme işlemi
+  const imageUrls: string[] = [];
+  
+  for (const imageFile of images) {
+    if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+      try {
+        const bytes = await imageFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        // Dosya uzantısı
+        const ext = imageFile.name.split('.').pop() || 'jpg';
+        const filename = `listing-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+        
+        // Upload klasörünü oluştur
+        const uploadDir = join(process.cwd(), 'public', 'uploads');
+        if (!existsSync(uploadDir)) {
+          await mkdir(uploadDir, { recursive: true });
+        }
+
+        // Dosyayı kaydet
+        const filepath = join(uploadDir, filename);
+        await writeFile(filepath, buffer);
+
+        // URL'i oluştur
+        const imageUrl = `/uploads/${filename}`;
+        imageUrls.push(imageUrl);
+        console.log("Image saved to:", imageUrl);
+      } catch (error) {
+        console.error("Resim yükleme hatası:", error);
+        // Hata olsa bile devam et, sadece o resmi atla
+      }
+    }
+  }
+  
+  const imageUrlsString = imageUrls.join(",");
 
   try {
     if (type === "job") {
@@ -226,7 +257,7 @@ export async function updateListingAction(formData: FormData) {
           wage,
           currency,
           workType,
-          images: imageUrlsString,
+          images: imageUrlsString || "",
           active,
         },
       });
@@ -248,7 +279,7 @@ export async function updateListingAction(formData: FormData) {
           currency,
           category,
           image: imageUrls.split(',')[0],
-          images: imageUrlsString,
+          images: imageUrlsString || "",
           active,
         },
       });
