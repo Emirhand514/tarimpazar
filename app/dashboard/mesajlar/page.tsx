@@ -4,6 +4,7 @@ import ConversationList from "./conversation-list";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { MessageSquare } from "lucide-react";
 
 export default async function MessagesPage(props: {
   searchParams?: Promise<{ conv?: string }>;
