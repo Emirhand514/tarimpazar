@@ -37,6 +37,24 @@ export default function Home() {
     "name": "TarımPazar",
     "description": "Tarım sektöründe istihdam ve ticaret platformu",
     "url": process.env.NEXT_PUBLIC_SITE_URL || "https://tarimpazar.com",
+    "logo": {
+      "@type": "ImageObject",
+      "url": `${process.env.NEXT_PUBLIC_SITE_URL || "https://tarimpazar.com"}/icon.png`
+    },
+    "sameAs": []
+  };
+
+  const breadcrumbData = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Ana Sayfa",
+        "item": process.env.NEXT_PUBLIC_SITE_URL || "https://tarimpazar.com"
+      }
+    ]
   };
 
   return (
