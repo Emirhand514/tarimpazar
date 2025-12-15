@@ -8,6 +8,8 @@ import { MapPin, Calendar, User, MessageSquare, ArrowLeft, Share2, AlertTriangle
 import { notFound } from "next/navigation";
 import MessageButton from "./message-button"; // Doğru import edildi
 import CallButton from "./call-button";
+import ShareButton from "./share-button";
+import ReportListingButton from "./report-listing-button";
 import { getCurrentUser } from "@/lib/auth";
 import FavoriteButton from "@/components/favorite-button";
 import { prisma } from "@/lib/prisma";
@@ -309,9 +311,14 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
                             type={listing.type} 
                             initialIsFavorited={!!isFavorited} 
                         />
-                        <Button variant="ghost" size="icon">
-                            <Share2 className="h-5 w-5 text-muted-foreground" />
-                        </Button>
+                        <ShareButton listingId={listingId} listingTitle={listing.title} />
+                        {currentUser && currentUser.id !== listing.userId && (
+                            <ReportListingButton 
+                                reportedUserId={listing.userId}
+                                reportedListingId={listingId}
+                                isLoggedIn={!!currentUser}
+                            />
+                        )}
                     </div>
                 </div>
 
