@@ -100,7 +100,8 @@ export async function createListingAction(formData: FormData) {
   const imageUrls: string[] = [];
   
   for (const imageFile of images) {
-    if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+    // FormData'dan gelen file'ı kontrol et
+    if (imageFile instanceof File && imageFile.size > 0 && imageFile.name) {
       try {
         const bytes = await imageFile.arrayBuffer();
         const buffer = Buffer.from(bytes);

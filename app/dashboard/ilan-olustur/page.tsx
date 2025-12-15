@@ -36,26 +36,27 @@ export default function CreateListingPage() {
   // En kolayı HTML input type="hidden" kullanmak ve select değiştikçe onu güncellemektir.
   // Ancak Shadcn Select bileşeni "name" prop'unu destekler, bu sayede FormData'ya otomatik dahil olur.
 
-  async function handleSubmit(formData: FormData) {
-    setErrorMessage(null)
-    // listingType'ı manuel ekle (state olduğu için)
-    formData.append("type", listingType)
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErrorMessage(null);
+    
+    const formData = new FormData(e.currentTarget);
+    formData.append("type", listingType);
 
     startTransition(async () => {
       try {
         await createListingAction(formData);
-        // Redirect başarılıysa buraya gelmez
       } catch (error: any) {
         // Next.js redirect() özel bir hata fırlatır (NEXT_REDIRECT)
         // Bu hatayı ignore etmemiz gerekiyor
-        if (error?.digest?.startsWith('NEXT_REDIRECT')) {
+        if (error?.digest?.startsWith('NEXT_REDIRECT') || error?.message?.includes('NEXT_REDIRECT')) {
           // Redirect başarılı, hata mesajı gösterme
           return;
         }
         console.error("İlan oluşturma hatası:", error);
         setErrorMessage(error.message || "İlan oluşturulurken bir hata oluştu.");
       }
-    })
+    });
   }
 
   return (
@@ -67,7 +68,7 @@ export default function CreateListingPage() {
         </p>
       </div>
 
-      <form action={handleSubmit} encType="multipart/form-data">
+      <form onSubmit={handleSubmit} encType="multipart/form-data">
         <Card>
           <CardHeader>
             <CardTitle>İlan Detayları</CardTitle>
