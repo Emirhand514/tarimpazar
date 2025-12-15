@@ -208,3 +208,81 @@ export async function clearConversationAction(conversationId: string) {
     return { success: false, message: "Sohbet temizlenirken bir hata oluştu." }
   }
 }
+
+// Sohbeti sil (mesajları ve sohbeti tamamen sil)
+export async function deleteConversationAction(conversationId: string) {
+  const userId = await getUserId()
+  if (!userId) return { success: false, message: "Oturum açmanız gerekiyor." }
+
+  try {
+    // Güvenlik: Kullanıcı bu sohbete dahil mi?
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+    })
+
+    if (!conversation || (conversation.participant1Id !== userId && conversation.participant2Id !== userId)) {
+      return { success: false, message: "Bu sohbete erişim yetkiniz yok." }
+    }
+
+    // Önce mesajları sil
+    await prisma.message.deleteMany({
+      where: { conversationId },
+    })
+
+    // Sonra sohbeti sil
+    await prisma.conversation.delete({
+      where: { id: conversationId },
+    })
+
+    revalidatePath("/dashboard/mesajlar")
+    return { success: true, message: "Sohbet silindi." }
+  } catch (error) {
+    console.error("Delete conversation error:", error)
+    return { success: false, message: "Sohbet silinirken bir hata oluştu." }
+  }
+}
+
+// Tüm sohbetleri temizle (tüm mesajları sil)
+export async function clearAllConversationsAction() {
+  const userId = await getUserId()
+  if (!userId) return { success: false, message: "Oturum açmanız gerekiyor." }
+
+  try {
+    // Kullanıcının tüm sohbetlerini bul
+    const conversations = await prisma.conversation.findMany({
+      where: {
+        OR: [
+          { participant1Id: userId },
+          { participant2Id: userId },
+        ],
+      },
+      select: { id: true },
+    })
+
+    const conversationIds = conversations.map(c => c.id)
+
+    if (conversationIds.length === 0) {
+      return { success: true, message: "Silinecek sohbet bulunamadı." }
+    }
+
+    // Tüm mesajları sil
+    await prisma.message.deleteMany({
+      where: {
+        conversationId: { in: conversationIds },
+      },
+    })
+
+    // Tüm sohbetleri sil
+    await prisma.conversation.deleteMany({
+      where: {
+        id: { in: conversationIds },
+      },
+    })
+
+    revalidatePath("/dashboard/mesajlar")
+    return { success: true, message: "Tüm sohbetler temizlendi." }
+  } catch (error) {
+    console.error("Clear all conversations error:", error)
+    return { success: false, message: "Sohbetler temizlenirken bir hata oluştu." }
+  }
+}
