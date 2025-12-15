@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"; // Assuming a Button component 
 import Link from "next/link";
 import { DollarSign, MessageSquare, Tractor, Plus, User, FolderX, Heart } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth"; // getCurrentUser fonksiyonunu import et
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() { // Bileşeni async yap
   const user = await getCurrentUser(); // Kullanıcı bilgilerini al
