@@ -129,6 +129,71 @@ export async function deleteListingAction(listingId: string, type: "product" | "
   }
 }
 
+// Şikayet durumunu güncelleme
+export async function updateReportStatusAction(reportId: string, status: "PENDING" | "RESOLVED" | "DISMISSED") {
+  try {
+    await checkAdmin();
+    
+    await prisma.report.update({
+      where: { id: reportId },
+      data: { status },
+    });
+    
+    revalidatePath("/dashboard/reports");
+    return { success: true, message: "Şikayet durumu güncellendi." };
+  } catch (error: any) {
+    console.error("Update Report Status Error:", error);
+    return { success: false, message: error.message || "Şikayet durumu güncellenirken bir hata oluştu." };
+  }
+}
+
+// Kullanıcı: Kendi ilanının aktif durumunu değiştirme
+export async function toggleMyListingStatusAction(listingId: string, type: "product" | "job", newStatus: boolean) {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      throw new Error("Oturum açmanız gerekiyor.");
+    }
+
+    if (type === "product") {
+      const product = await prisma.product.findUnique({
+        where: { id: listingId },
+        select: { userId: true },
+      });
+      
+      if (!product || product.userId !== currentUser.id) {
+        throw new Error("Bu ilana erişim yetkiniz yok.");
+      }
+      
+      await prisma.product.update({
+        where: { id: listingId },
+        data: { active: newStatus },
+      });
+    } else if (type === "job") {
+      const job = await prisma.jobPosting.findUnique({
+        where: { id: listingId },
+        select: { userId: true },
+      });
+      
+      if (!job || job.userId !== currentUser.id) {
+        throw new Error("Bu ilana erişim yetkiniz yok.");
+      }
+      
+      await prisma.jobPosting.update({
+        where: { id: listingId },
+        data: { active: newStatus },
+      });
+    }
+
+    revalidatePath("/dashboard/ilanlarim");
+    revalidatePath("/explore");
+    return { success: true, message: `İlan ${newStatus ? "aktif" : "pasif"} hale getirildi.` };
+  } catch (error: any) {
+    console.error("Toggle My Listing Status Error:", error);
+    return { success: false, message: error.message || "İlan durumu güncellenirken bir hata oluştu." };
+  }
+}
+
 // Admin: İlanın Aktif Durumunu Değiştirme (Gizle/Yayınla)
 export async function toggleListingActiveStatusAction(listingId: string, type: "product" | "job", newStatus: boolean) {
   try {

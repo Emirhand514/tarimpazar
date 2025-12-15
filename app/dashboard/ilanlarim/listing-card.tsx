@@ -11,9 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Edit, Trash, Eye, MapPin } from "lucide-react";
+import { MoreVertical, Edit, Trash, Eye, MapPin, EyeOff, Power } from "lucide-react";
 import Link from "next/link";
-import { deleteListingAction } from "@/app/actions/admin";
+import { deleteListingAction, toggleMyListingStatusAction } from "@/app/actions/admin";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
@@ -26,11 +26,25 @@ export default function ListingCard({ listing }: { listing: any }) {
             const result = await deleteListingAction(listing.id, listing.type);
             if (result.success) {
                 toast.success(result.message);
+                window.location.reload();
             } else {
                 toast.error(result.message);
             }
         });
     }
+  };
+
+  const handleToggleStatus = () => {
+    const newStatus = listing.status !== "active";
+    startTransition(async () => {
+        const result = await toggleMyListingStatusAction(listing.id, listing.type, newStatus);
+        if (result.success) {
+            toast.success(result.message);
+            window.location.reload();
+        } else {
+            toast.error(result.message);
+        }
+    });
   };
 
   const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {

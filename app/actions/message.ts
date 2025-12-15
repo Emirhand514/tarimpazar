@@ -144,5 +144,67 @@ export async function getMessages(conversationId: string) {
     }
   })
 
+  // Kullanıcıya gönderilen ve okunmamış mesajları okundu olarak işaretle
+  const unreadMessages = messages.filter(msg => msg.receiverId === userId && !msg.isRead)
+  if (unreadMessages.length > 0) {
+    await prisma.message.updateMany({
+      where: {
+        id: { in: unreadMessages.map(m => m.id) },
+        receiverId: userId,
+      },
+      data: { isRead: true },
+    })
+  }
+
   return messages
+}
+
+// Mesajları okundu olarak işaretle
+export async function markMessagesAsReadAction(conversationId: string) {
+  const userId = await getUserId()
+  if (!userId) return { success: false, message: "Oturum açmanız gerekiyor." }
+
+  try {
+    await prisma.message.updateMany({
+      where: {
+        conversationId,
+        receiverId: userId,
+        isRead: false,
+      },
+      data: { isRead: true },
+    })
+
+    revalidatePath("/dashboard/mesajlar")
+    return { success: true, message: "Mesajlar okundu olarak işaretlendi." }
+  } catch (error) {
+    console.error("Mark messages as read error:", error)
+    return { success: false, message: "Mesajlar işaretlenirken bir hata oluştu." }
+  }
+}
+
+// Sohbeti temizle (mesajları sil)
+export async function clearConversationAction(conversationId: string) {
+  const userId = await getUserId()
+  if (!userId) return { success: false, message: "Oturum açmanız gerekiyor." }
+
+  try {
+    // Güvenlik: Kullanıcı bu sohbete dahil mi?
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+    })
+
+    if (!conversation || (conversation.participant1Id !== userId && conversation.participant2Id !== userId)) {
+      return { success: false, message: "Bu sohbete erişim yetkiniz yok." }
+    }
+
+    await prisma.message.deleteMany({
+      where: { conversationId },
+    })
+
+    revalidatePath("/dashboard/mesajlar")
+    return { success: true, message: "Sohbet temizlendi." }
+  } catch (error) {
+    console.error("Clear conversation error:", error)
+    return { success: false, message: "Sohbet temizlenirken bir hata oluştu." }
+  }
 }

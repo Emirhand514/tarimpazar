@@ -32,9 +32,13 @@ export function LanguageToggle() {
   const changeLocale = (newLocale: Locale) => {
     setLocale(newLocale)
     // Cookie'ye kaydet (30 gün)
-    document.cookie = `locale=${newLocale}; path=/; max-age=${60 * 60 * 24 * 30}`
+    document.cookie = `locale=${newLocale}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`
+    // HTML lang attribute'u güncelle
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = newLocale
+    }
     // Sayfayı yenile
-    router.refresh()
+    window.location.reload()
   }
 
   return (

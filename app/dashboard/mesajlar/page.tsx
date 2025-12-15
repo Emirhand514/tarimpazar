@@ -76,13 +76,18 @@ export default async function MessagesPage(props: {
                     <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center">
                         <h3 className="font-semibold truncate">{conv.partner.name}</h3>
-                        {conv.lastMessage && (
-                            <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
-                                {new Date(conv.lastMessage.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                            </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {conv.lastMessage && !conv.lastMessage.isRead && conv.lastMessage.senderId !== currentUser.id && (
+                                <span className="h-2 w-2 bg-primary rounded-full" title="Okunmamış mesaj" />
+                            )}
+                            {conv.lastMessage && (
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                    {new Date(conv.lastMessage.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                </span>
+                            )}
+                        </div>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className={`text-sm truncate ${conv.lastMessage && !conv.lastMessage.isRead && conv.lastMessage.senderId !== currentUser.id ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
                         {conv.lastMessage ? conv.lastMessage.content : "Yeni Sohbet"}
                     </p>
                     </div>

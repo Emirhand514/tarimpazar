@@ -5,10 +5,20 @@ import { getMessages, sendMessageAction } from "@/app/actions/message"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Send, Loader2 } from "lucide-react"
+import { Send, Loader2, Trash2, CheckCheck } from "lucide-react"
 import { useRouter } from "next/navigation"
 import BlockButton from "@/components/block-button"
-import ReportButton from "@/components/report-button"; // Import ReportButton
+import ReportButton from "@/components/report-button"
+import { markMessagesAsReadAction, clearConversationAction } from "@/app/actions/message"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { toast } from "sonner"
+import { useTransition } from "react"
 
 export default function ChatView({ conversationId, partner, initialMessages, initialIsBlocked, isLoggedIn }: { conversationId: string, partner: any, initialMessages: any[], initialIsBlocked: boolean, isLoggedIn: boolean }) {
   const [messages, setMessages] = useState(initialMessages)
@@ -72,7 +82,52 @@ export default function ChatView({ conversationId, partner, initialMessages, ini
                 </Avatar>
                 <h3 className="font-semibold text-lg">{partner.name}</h3>
             </div>
-            <div className="flex gap-2"> {/* Use flex gap for buttons */}
+            <div className="flex gap-2">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                            <span className="sr-only">Daha fazla</span>
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                            </svg>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
+                            onClick={() => {
+                                startTransition(async () => {
+                                    const result = await markMessagesAsReadAction(conversationId)
+                                    if (result.success) {
+                                        toast.success(result.message)
+                                        router.refresh()
+                                    } else {
+                                        toast.error(result.message)
+                                    }
+                                })
+                            }}
+                        >
+                            <CheckCheck className="mr-2 h-4 w-4" /> Tümünü Okundu İşaretle
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => {
+                                if (confirm("Bu sohbeti temizlemek istediğinize emin misiniz? Tüm mesajlar silinecektir.")) {
+                                    startTransition(async () => {
+                                        const result = await clearConversationAction(conversationId)
+                                        if (result.success) {
+                                            toast.success(result.message)
+                                            router.refresh()
+                                        } else {
+                                            toast.error(result.message)
+                                        }
+                                    })
+                                }
+                            }}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" /> Sohbeti Temizle
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 <BlockButton userId={partner.id} initialIsBlocked={initialIsBlocked} />
                 <ReportButton reportedUserId={partner.id} isLoggedIn={isLoggedIn} variant="outline" className="text-muted-foreground hover:bg-yellow-50 hover:text-yellow-600 border-yellow-200" />
             </div>

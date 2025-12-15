@@ -32,10 +32,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { deleteReportAction } from "@/app/actions/admin";
+import { deleteReportAction, updateReportStatusAction } from "@/app/actions/admin";
 import { fetchReportsAction } from "@/app/actions/reports";
 import { useToast } from "@/hooks/use-toast";
-import Link from "next/link"; // Import Link for navigation
+import Link from "next/link";
+import { CheckCircle, XCircle, Clock } from "lucide-react";
 
 export default function AdminReportsPage() {
   const router = useRouter();
@@ -71,6 +72,21 @@ export default function AdminReportsPage() {
       toast({ title: "Başarılı", description: result.message });
       setOpenDeleteDialog(false);
       startTransition(async () => { // Re-fetch reports to update table
+        const fetchedReports = await fetchReportsAction();
+        setReports(fetchedReports);
+      });
+    } else {
+      toast({ title: "Hata", description: result.message, variant: "destructive" });
+    }
+  };
+
+  const handleUpdateReportStatus = async (status: "PENDING" | "RESOLVED" | "DISMISSED") => {
+    if (!selectedReport) return;
+    const result = await updateReportStatusAction(selectedReport.id, status);
+    if (result.success) {
+      toast({ title: "Başarılı", description: result.message });
+      setOpenDetailDialog(false);
+      startTransition(async () => {
         const fetchedReports = await fetchReportsAction();
         setReports(fetchedReports);
       });
@@ -225,9 +241,26 @@ export default function AdminReportsPage() {
               </div>
               <div>
                 <h4 className="font-semibold mb-2">Durum:</h4>
-                <Badge variant={getStatusBadgeVariant(selectedReport.status)} className="capitalize">
+                <Badge variant={getStatusBadgeVariant(selectedReport.status)} className="capitalize mb-2">
                   {selectedReport.status === "PENDING" ? "Beklemede" : selectedReport.status === "RESOLVED" ? "Çözüldü" : "Reddedildi"}
                 </Badge>
+                <div className="flex gap-2 mt-3">
+                  {selectedReport.status !== "RESOLVED" && (
+                    <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus("RESOLVED")}>
+                      <CheckCircle className="mr-2 h-4 w-4" /> Çözüldü
+                    </Button>
+                  )}
+                  {selectedReport.status !== "DISMISSED" && (
+                    <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus("DISMISSED")}>
+                      <XCircle className="mr-2 h-4 w-4" /> Reddet
+                    </Button>
+                  )}
+                  {selectedReport.status !== "PENDING" && (
+                    <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus("PENDING")}>
+                      <Clock className="mr-2 h-4 w-4" /> Beklemede
+                    </Button>
+                  )}
+                </div>
               </div>
               <div>
                 <h4 className="font-semibold mb-2">Tarih:</h4>
