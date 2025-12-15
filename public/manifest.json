@@ -1,0 +1,28 @@
+{
+  "name": "TarımPazar - Tarım İstihdam ve Ticaret Platformu",
+  "short_name": "TarımPazar",
+  "description": "Çiftçiler, biçerdöver operatörleri ve tüccarlar için güvenli ticaret platformu",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "shopping", "food"],
+  "lang": "tr",
+  "dir": "ltr"
+}
+

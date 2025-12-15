@@ -32,20 +32,38 @@ export async function generateMetadata(
     ? (listing as any).image || "/og-image.jpg"
     : "/og-image.jpg";
 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://tarimpazar.com";
+  const canonicalUrl = `${baseUrl}/ilan/${id}`;
+
   return {
     title,
     description,
     openGraph: {
       title,
       description,
-      images: [image],
+      url: canonicalUrl,
+      siteName: "TarımPazar",
+      images: [
+        {
+          url: image.startsWith("http") ? image : `${baseUrl}${image}`,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
       type: "article",
+      locale: "tr_TR",
+      publishedTime: listing.createdAt.toISOString(),
+      modifiedTime: listing.updatedAt?.toISOString() || listing.createdAt.toISOString(),
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [image],
+      images: [image.startsWith("http") ? image : `${baseUrl}${image}`],
+    },
+    alternates: {
+      canonical: canonicalUrl,
     },
   };
 }
@@ -157,46 +175,72 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
 
   const canContact = !hasBlocked && !isBlockedBy;
 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://tarimpazar.com";
+  const fullImageUrl = image.startsWith("http") ? image : `${baseUrl}${image}`;
+
   // Structured Data for Product/Job Listing
   const structuredData = {
     "@context": "https://schema.org",
     "@type": listing.type === "product" ? "Product" : "JobPosting",
     "name": listing.title,
     "description": listing.description,
+    "url": `${baseUrl}/ilan/${params.id}`,
     ...(listing.type === "product" ? {
       "offers": {
         "@type": "Offer",
-        "price": (listing as any).price,
+        "price": (listing as any).price || 0,
         "priceCurrency": "TRY",
         "availability": "https://schema.org/InStock",
+        "url": `${baseUrl}/ilan/${params.id}`,
+        "seller": {
+          "@type": "Person",
+          "name": listing.user.name || "TarımPazar Kullanıcısı"
+        }
       },
-      "category": (listing as any).category,
+      "category": (listing as any).category || "Tarım Ürünü",
+      "brand": {
+        "@type": "Brand",
+        "name": "TarımPazar"
+      }
     } : {
       "baseSalary": {
         "@type": "MonetaryAmount",
         "currency": "TRY",
         "value": {
           "@type": "QuantitativeValue",
-          "value": (listing as any).wage,
-          "unitText": "MONTH"
+          "value": (listing as any).wage || 0,
+          "unitText": "TRY"
         }
       },
-      "employmentType": (listing as any).workType,
+      "employmentType": (listing as any).workType || "FULL_TIME",
+      "jobLocation": {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": (listing as any).city || "",
+          "addressRegion": (listing as any).district || "",
+          "addressCountry": "TR"
+        }
+      },
+      "hiringOrganization": {
+        "@type": "Organization",
+        "name": listing.user.name || "TarımPazar"
+      }
     }),
     "datePosted": listing.createdAt.toISOString(),
-    "location": {
-      "@type": "Place",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": listing.type === "product" 
-          ? ((listing as any).city || "")
-          : ((listing as any).city || ""),
-        "addressRegion": listing.type === "product"
-          ? ((listing as any).district || "")
-          : ((listing as any).district || ""),
+    "dateModified": listing.updatedAt?.toISOString() || listing.createdAt.toISOString(),
+    ...(listing.type === "product" ? {
+      "location": {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": (listing as any).city || "",
+          "addressRegion": (listing as any).district || "",
+          "addressCountry": "TR"
+        }
       }
-    },
-    "image": image,
+    } : {}),
+    "image": fullImageUrl,
   };
 
   return (

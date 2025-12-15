@@ -11,11 +11,26 @@ import { Prisma } from "@prisma/client";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "İlanlar",
-  description: "Tarım sektöründe iş ilanları, ürün satışları ve takas teklifleri. Binlerce aktif ilan arasından aradığınızı bulun.",
+  title: "İlanları Keşfet",
+  description: "Tarım ürünleri, iş ilanları ve hizmetleri keşfedin. Binlerce aktif ilan arasından aradığınızı bulun.",
   openGraph: {
-    title: "Tarım İlanları - TarımPazar",
-    description: "Tarım sektöründe iş ilanları, ürün satışları ve takas teklifleri. Binlerce aktif ilan arasından aradığınızı bulun.",
+    title: "İlanları Keşfet - TarımPazar",
+    description: "Tarım ürünleri, iş ilanları ve hizmetleri keşfedin. Binlerce aktif ilan arasından aradığınızı bulun.",
+    url: "/explore",
+    siteName: "TarımPazar",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "TarımPazar - İlanları Keşfet",
+      },
+    ],
+    locale: "tr_TR",
+    type: "website",
+  },
+  alternates: {
+    canonical: "/explore",
   },
 };
 

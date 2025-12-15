@@ -56,17 +56,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Dynamic product pages
     const productPages: MetadataRoute.Sitemap = products.map((product) => ({
       url: `${baseUrl}/ilan/prod-${product.id}`,
-      lastModified: product.updatedAt,
+      lastModified: product.updatedAt || new Date(),
       changeFrequency: 'weekly' as const,
-      priority: 0.7,
+      priority: 0.8,
     }))
 
     // Dynamic job pages
     const jobPages: MetadataRoute.Sitemap = jobs.map((job) => ({
       url: `${baseUrl}/ilan/job-${job.id}`,
-      lastModified: job.updatedAt,
+      lastModified: job.updatedAt || new Date(),
       changeFrequency: 'weekly' as const,
-      priority: 0.7,
+      priority: 0.8,
     }))
 
     return [...staticPages, ...productPages, ...jobPages]

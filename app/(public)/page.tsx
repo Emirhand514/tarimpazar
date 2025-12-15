@@ -49,6 +49,10 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbData) }}
+      />
       <div className="flex flex-col min-h-screen">
         <main className="flex-1">
         {/* HERO SECTION - Padding Azaltıldı */}

@@ -61,6 +61,10 @@ export const metadata = {
     // Google Search Console verification kodu buraya eklenecek
     // google: "verification_token_here",
   },
+  alternates: {
+    canonical: "/",
+  },
+  manifest: "/manifest.json",
 };
 
 export default async function RootLayout({
