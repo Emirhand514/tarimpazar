@@ -61,7 +61,7 @@ export default function CreateListingPage() {
         </p>
       </div>
 
-      <form action={handleSubmit}>
+      <form action={handleSubmit} encType="multipart/form-data">
         <Card>
           <CardHeader>
             <CardTitle>İlan Detayları</CardTitle>

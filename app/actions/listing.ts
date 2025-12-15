@@ -4,6 +4,9 @@ import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
+import { existsSync } from "fs";
 
 interface ListingData {
   id: string;
@@ -88,13 +91,41 @@ export async function createListingAction(formData: FormData) {
   const contactPhone = formData.get("contactPhone") as string;
   const images = formData.getAll("images"); // Birden fazla resim olabilir
 
-  // Resim yükleme mantığı buraya eklenebilir (örneğin Cloudinary'ye)
-  // Şimdilik sadece URL'leri virgülle ayrılmış string olarak tutalım
-  const imageUrls = images.map(file => {
-    // Burada gerçek bir dosya yükleme işlemi olmalı
-    // Şimdilik placeholder URL dönüyorum
-    return file instanceof File && file.size > 0 ? `https://placeholder.com/${file.name}` : "";
-  }).filter(Boolean).join(",");
+  // Resim yükleme işlemi
+  const imageUrls: string[] = [];
+  
+  for (const imageFile of images) {
+    if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+      try {
+        const bytes = await imageFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        // Dosya uzantısı
+        const ext = imageFile.name.split('.').pop() || 'jpg';
+        const filename = `listing-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+        
+        // Upload klasörünü oluştur
+        const uploadDir = join(process.cwd(), 'public', 'uploads');
+        if (!existsSync(uploadDir)) {
+          await mkdir(uploadDir, { recursive: true });
+        }
+
+        // Dosyayı kaydet
+        const filepath = join(uploadDir, filename);
+        await writeFile(filepath, buffer);
+
+        // URL'i oluştur
+        const imageUrl = `/uploads/${filename}`;
+        imageUrls.push(imageUrl);
+        console.log("Image saved to:", imageUrl);
+      } catch (error) {
+        console.error("Resim yükleme hatası:", error);
+        // Hata olsa bile devam et, sadece o resmi atla
+      }
+    }
+  }
+  
+  const imageUrlsString = imageUrls.join(",");
 
 
   try {
@@ -113,7 +144,7 @@ export async function createListingAction(formData: FormData) {
           wage,
           currency,
           workType,
-          images: imageUrls,
+          images: imageUrlsString,
           userId: currentUser.id,
           active: true, // Varsayılan olarak aktif
         },
@@ -133,8 +164,8 @@ export async function createListingAction(formData: FormData) {
           price,
           currency,
           category,
-          image: imageUrls.split(',')[0], // İlk resmi ana görsel olarak al
-          images: imageUrls,
+          image: imageUrlsString.split(',')[0] || "", // İlk resmi ana görsel olarak al
+          images: imageUrlsString,
           userId: currentUser.id,
           active: true, // Varsayılan olarak aktif
         },
@@ -195,7 +226,7 @@ export async function updateListingAction(formData: FormData) {
           wage,
           currency,
           workType,
-          images: imageUrls,
+          images: imageUrlsString,
           active,
         },
       });
@@ -217,7 +248,7 @@ export async function updateListingAction(formData: FormData) {
           currency,
           category,
           image: imageUrls.split(',')[0],
-          images: imageUrls,
+          images: imageUrlsString,
           active,
         },
       });
