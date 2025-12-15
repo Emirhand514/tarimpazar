@@ -211,3 +211,4 @@ Bu proje **server-side rendering** kullanıyor. Bu yüzden:
 **En iyi çözüm:** Vercel kullanın! 🚀
 
 
+

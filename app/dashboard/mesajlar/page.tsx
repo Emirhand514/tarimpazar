@@ -6,13 +6,19 @@ import { getConversations, getMessages } from "@/app/actions/message";
 import ChatView from "./chat-view";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function MessagesPage(props: {
   searchParams?: Promise<{ conv?: string }>;
 }) {
   const searchParams = await props.searchParams || {};
-  const conversations = await getConversations();
   const currentUser = await getCurrentUser();
+  
+  if (!currentUser) {
+    redirect("/auth/sign-in");
+  }
+
+  const conversations = await getConversations();
   const selectedConversationId = searchParams.conv;
 
   let selectedConversation = null;
@@ -24,17 +30,16 @@ export default async function MessagesPage(props: {
     if (selectedConversation) {
         initialMessages = await getMessages(selectedConversationId);
         
-        if (currentUser) {
-            const block = await prisma.block.findUnique({
-                where: {
-                    blockerId_blockedId: {
-                        blockerId: currentUser.id,
-                        blockedId: selectedConversation.partner.id
-                    }
+        // currentUser is guaranteed to exist due to redirect check above
+        const block = await prisma.block.findUnique({
+            where: {
+                blockerId_blockedId: {
+                    blockerId: currentUser.id,
+                    blockedId: selectedConversation.partner.id
                 }
-            });
-            initialIsBlocked = !!block;
-        }
+            }
+        });
+        initialIsBlocked = !!block;
     }
   }
 
@@ -96,7 +101,7 @@ export default async function MessagesPage(props: {
             partner={selectedConversation.partner} 
             initialMessages={initialMessages}
             initialIsBlocked={initialIsBlocked}
-            isLoggedIn={!!currentUser} // Pass isLoggedIn prop
+            isLoggedIn={true} // User is guaranteed to be logged in due to redirect check
           />
         ) : (
           <div className="flex flex-1 items-center justify-center text-muted-foreground text-center p-8">

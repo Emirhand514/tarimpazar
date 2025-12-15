@@ -6,7 +6,13 @@ import { getCurrentUser } from "@/lib/auth"; // getCurrentUser fonksiyonunu impo
 
 export default async function DashboardPage() { // Bileşeni async yap
   const user = await getCurrentUser(); // Kullanıcı bilgilerini al
-  const userName = user?.name || "Kullanıcı"; // Kullanıcı adını al veya varsayılan değer ata
+
+  // If user is not found, redirect to login (should not happen due to layout check, but adding for safety)
+  if (!user) {
+    redirect("/auth/sign-in");
+  }
+
+  const userName = user.name || "Kullanıcı"; // Kullanıcı adını al veya varsayılan değer ata
 
   return (
     <div className="flex flex-col gap-4">

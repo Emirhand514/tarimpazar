@@ -162,3 +162,4 @@ NEXT_PUBLIC_SITE_URL=https://your-app.vercel.app
 **Paylaşımlı hosting:** Sadece Node.js desteği olan ve PostgreSQL sunabilen yerlerde mümkün.
 
 
+

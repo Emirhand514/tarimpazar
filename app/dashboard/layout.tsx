@@ -1,8 +1,14 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { getCurrentUser } from "@/lib/auth"; // Import getCurrentUser
+import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser(); // Fetch current user
+
+  // If user is not found, redirect to login
+  if (!user) {
+    redirect("/auth/sign-in");
+  }
 
   return (
     <div className="flex flex-col min-h-screen w-full overflow-x-hidden">

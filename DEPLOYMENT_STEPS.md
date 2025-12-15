@@ -158,3 +158,4 @@ Eğer hosting Node.js desteklemiyorsa, sadece static HTML export:
 4. Domain bağla (opsiyonel)
 
 
+

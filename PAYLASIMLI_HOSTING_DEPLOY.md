@@ -189,3 +189,4 @@ Sorun yaşarsanız:
 3. Alternatif olarak Vercel/Railway kullanmayı düşünün
 
 
+

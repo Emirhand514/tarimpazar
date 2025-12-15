@@ -2,15 +2,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import ListingCard from "./listing-card";
 
 // Veritabanından ilanları çeken fonksiyon
-async function getUserListings() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("session_user_id")?.value;
-
-  if (!userId) return { products: [], jobs: [] };
+async function getUserListings(userId: string) {
 
   const [products, jobs] = await Promise.all([
     prisma.product.findMany({
@@ -27,7 +24,13 @@ async function getUserListings() {
 }
 
 export default async function MyListingsPage() {
-  const { products, jobs } = await getUserListings();
+  const user = await getCurrentUser();
+  
+  if (!user) {
+    redirect("/auth/sign-in");
+  }
+
+  const { products, jobs } = await getUserListings(user.id);
 
   // İki listeyi birleştirip görüntü için formatlayalım
   const allListings = [

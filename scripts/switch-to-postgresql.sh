@@ -33,3 +33,4 @@ echo "   2. npx prisma migrate deploy"
 echo "   3. npm run build"
 
 
+

@@ -15,7 +15,7 @@ async function checkProductionReadiness() {
   
   if (!dbUrl) {
     console.log('❌ DATABASE_URL environment variable bulunamadı!\n');
-    console.log('📝 PostgreSQL database için bir bağlantı string'i gerekli:');
+    console.log('📝 PostgreSQL database için bir bağlantı stringi gerekli:');
     console.log('   Format: postgresql://user:password@host:5432/database\n');
     console.log('💡 Ücretsiz PostgreSQL seçenekleri:');
     console.log('   - Supabase: https://supabase.com');
@@ -73,5 +73,6 @@ checkProductionReadiness()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
 
 

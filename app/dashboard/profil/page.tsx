@@ -1,11 +1,12 @@
 import { getUserProfile } from "@/app/actions/profile";
 import ProfileForm from "./profile-form"; // Client Component ayırıyoruz
+import { redirect } from "next/navigation";
 
 export default async function ProfilePage() {
   const user = await getUserProfile();
 
   if (!user) {
-    return <div>Oturum açmanız gerekiyor.</div>;
+    redirect("/auth/sign-in");
   }
 
   // Tarihleri string'e çevirerek client component'e geçmek daha güvenli (Serialization uyarısı almamak için)
