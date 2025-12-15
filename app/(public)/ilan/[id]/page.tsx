@@ -174,8 +174,8 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
   }
 
   const canContact = !hasBlocked && !isBlockedBy;
-
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://tarimpazar.com";
+  const listingId = params.id;
   const fullImageUrl = image.startsWith("http") ? image : `${baseUrl}${image}`;
 
   // Structured Data for Product/Job Listing
@@ -184,14 +184,14 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
     "@type": listing.type === "product" ? "Product" : "JobPosting",
     "name": listing.title,
     "description": listing.description,
-    "url": `${baseUrl}/ilan/${params.id}`,
+    "url": `${baseUrl}/ilan/${listingId}`,
     ...(listing.type === "product" ? {
       "offers": {
         "@type": "Offer",
         "price": (listing as any).price || 0,
         "priceCurrency": "TRY",
         "availability": "https://schema.org/InStock",
-        "url": `${baseUrl}/ilan/${params.id}`,
+        "url": `${baseUrl}/ilan/${listingId}`,
         "seller": {
           "@type": "Person",
           "name": listing.user.name || "TarımPazar Kullanıcısı"
