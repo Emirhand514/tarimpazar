@@ -12,21 +12,62 @@ export async function getReportStats() {
         redirect("/auth/sign-in"); // Oturum açmamışsa giriş sayfasına yönlendir
     }
 
-    // Örnek istatistik verileri
-    const totalUsers = await prisma.user.count();
-    const totalListings = await prisma.product.count() + await prisma.jobPosting.count();
-    const totalReports = await prisma.report.count();
-    const pendingReports = await prisma.report.count({ where: { status: "PENDING" } });
+    // Kullanıcıya özel istatistikler
+    const userProducts = await prisma.product.count({
+        where: { userId: currentUser.id }
+    });
+    
+    const userJobs = await prisma.jobPosting.count({
+        where: { userId: currentUser.id }
+    });
+    
+    const totalListings = userProducts + userJobs;
+    
+    const activeProducts = await prisma.product.count({
+        where: { userId: currentUser.id, active: true }
+    });
+    
+    const activeJobs = await prisma.jobPosting.count({
+        where: { userId: currentUser.id, active: true }
+    });
+    
+    const activeListings = activeProducts + activeJobs;
 
-    const estimatedRevenue: number | null = null; // Always null as per new requirement
+    // Kullanıcının mesajlarını say (kullanıcının gönderdiği veya aldığı mesajlar)
+    const sentMessages = await prisma.message.count({
+        where: { senderId: currentUser.id }
+    });
+    
+    const receivedMessages = await prisma.message.count({
+        where: { receiverId: currentUser.id }
+    });
+    
+    const totalMessages = sentMessages + receivedMessages;
+    
+    const unreadMessages = await prisma.message.count({
+        where: { 
+            receiverId: currentUser.id,
+            isRead: false 
+        }
+    });
+
+    // Aktif ürünlerden tahmini kazanç hesapla (sadece aktif ürünler için)
+    const activeProductsList = await prisma.product.findMany({
+        where: { userId: currentUser.id, active: true },
+        select: { price: true }
+    });
+    
+    const estimatedRevenue = activeProductsList.reduce((sum, product) => {
+        return sum + Number(product.price);
+    }, 0);
 
     return {
-        totalUsers,
         totalListings,
-        totalReports,
-        pendingReports,
-        totalMessages: 1234, // Placeholder
-        estimatedRevenue: estimatedRevenue,
+        activeListings,
+        totalViews: totalListings * 10, // Tahmini görüntülenme (her ilan için 10 görüntülenme varsayımı)
+        newMessages: unreadMessages,
+        totalMessages,
+        estimatedRevenue: estimatedRevenue > 0 ? estimatedRevenue : null,
     };
 }
 
@@ -35,12 +76,8 @@ export async function getMonthlyActivity() {
     if (!currentUser) {
         redirect("/auth/sign-in"); // Oturum açmamışsa giriş sayfasına yönlendir
     }
-    
-    // Sadece adminler bu verilere erişebilir
-    if (currentUser.role !== "ADMIN") {
-        redirect("/"); // Yetkisiz erişim
-    }
 
+    // Kullanıcının kendi aylık aktivitesini göster
     const data = [];
     const now = new Date();
 
@@ -51,8 +88,10 @@ export async function getMonthlyActivity() {
 
         const monthName = date.toLocaleString("tr-TR", { month: "short" });
 
+        // Kullanıcının kendi ilanlarını say
         const listingsCount = await prisma.product.count({
             where: {
+                userId: currentUser.id,
                 createdAt: {
                     gte: startDate,
                     lte: endDate,
@@ -60,6 +99,7 @@ export async function getMonthlyActivity() {
             },
         }) + await prisma.jobPosting.count({
             where: {
+                userId: currentUser.id,
                 createdAt: {
                     gte: startDate,
                     lte: endDate,
@@ -67,8 +107,13 @@ export async function getMonthlyActivity() {
             },
         });
 
+        // Kullanıcının gönderdiği ve aldığı mesajları say
         const messagesCount = await prisma.message.count({
             where: {
+                OR: [
+                    { senderId: currentUser.id },
+                    { receiverId: currentUser.id }
+                ],
                 createdAt: {
                     gte: startDate,
                     lte: endDate,
@@ -76,8 +121,8 @@ export async function getMonthlyActivity() {
             },
         });
 
-        // Görüntülenme sayısı için gerçek bir alanımız olmadığı için ilan sayısıyla orantılı bir değer türetelim
-        const viewsCount = listingsCount * Math.floor(Math.random() * (20 - 10 + 1) + 10); // İlan başına 10-20 arası görüntüleme
+        // Tahmini görüntülenme
+        const viewsCount = listingsCount * 15; // İlan başına 15 görüntüleme varsayımı
 
         data.push({
             month: monthName,
@@ -94,33 +139,61 @@ export async function getUserListingsForReports() {
     if (!currentUser) {
         redirect("/auth/sign-in"); // Oturum açmamışsa giriş sayfasına yönlendir
     }
-    // Sadece adminler bu verilere erişebilir
-    if (currentUser.role !== "ADMIN") {
-        redirect("/"); // Yetkisiz erişim
-    }
 
-    // Örnek kullanıcı listeleme verileri
-    const usersWithListings = await prisma.user.findMany({
-        take: 10, // Sadece ilk 10 kullanıcının ilanlarını alalım
+    // Kullanıcının kendi ilanlarını getir
+    const userProducts = await prisma.product.findMany({
+        where: { userId: currentUser.id },
         select: {
             id: true,
-            name: true,
-            email: true,
-            products: {
-                take: 2, // Her kullanıcıdan en fazla 2 ilan
-                select: { id: true, title: true, active: true },
-            },
-            jobPostings: {
-                take: 2,
-                select: { id: true, title: true, active: true },
-            },
+            title: true,
+            category: true,
+            price: true,
+            active: true,
+            createdAt: true,
+            city: true,
+            district: true,
         },
+        orderBy: { createdAt: 'desc' },
     });
 
-    return usersWithListings.map(user => ({
-        id: user.id,
-        name: user.name || user.email,
-        totalListings: user.products.length + user.jobPostings.length,
-        activeListings: user.products.filter(p => p.active).length + user.jobPostings.filter(j => j.active).length,
-    }));
+    const userJobs = await prisma.jobPosting.findMany({
+        where: { userId: currentUser.id },
+        select: {
+            id: true,
+            title: true,
+            workType: true,
+            wage: true,
+            active: true,
+            createdAt: true,
+            city: true,
+            district: true,
+        },
+        orderBy: { createdAt: 'desc' },
+    });
+
+    // İlanları birleştir ve formatla
+    const allListings = [
+        ...userProducts.map(product => ({
+            id: `prod-${product.id}`,
+            title: product.title,
+            category: product.category || "Ürün",
+            price: `${product.price} ₺`,
+            status: product.active ? "Aktif" : "Pasif",
+            views: Math.floor(Math.random() * 50) + 10, // Tahmini görüntülenme
+            date: product.createdAt.toLocaleDateString("tr-TR"),
+            location: [product.city, product.district].filter(Boolean).join(", ") || "Belirtilmemiş",
+        })),
+        ...userJobs.map(job => ({
+            id: `job-${job.id}`,
+            title: job.title,
+            category: job.workType || "İş İlanı",
+            price: `${job.wage} ₺/Ay`,
+            status: job.active ? "Aktif" : "Pasif",
+            views: Math.floor(Math.random() * 50) + 10,
+            date: job.createdAt.toLocaleDateString("tr-TR"),
+            location: [job.city, job.district].filter(Boolean).join(", ") || "Belirtilmemiş",
+        })),
+    ];
+
+    return allListings;
 }

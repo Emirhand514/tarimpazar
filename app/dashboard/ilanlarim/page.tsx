@@ -1,11 +1,9 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import ListingCard from "./listing-card";
-
-const prisma = new PrismaClient();
 
 // Veritabanından ilanları çeken fonksiyon
 async function getUserListings() {

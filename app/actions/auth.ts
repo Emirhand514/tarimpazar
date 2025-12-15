@@ -1,10 +1,8 @@
 "use server"
 
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-
-const prisma = new PrismaClient()
 
 export async function loginAction(formData: FormData) {
   const email = formData.get("email") as string
@@ -15,9 +13,12 @@ export async function loginAction(formData: FormData) {
   }
 
   try {
+    // Email'i lowercase'e çevir (case-insensitive arama için)
+    const normalizedEmail = email.toLowerCase().trim()
+    
     // Kullanıcıyı bul
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     })
 
     if (!user) {
@@ -26,6 +27,10 @@ export async function loginAction(formData: FormData) {
 
     // Şifre kontrolü (Demo için düz metin karşılaştırma)
     // Gerçek projede: await bcrypt.compare(password, user.password)
+    if (!user.password) {
+      return { success: false, message: "Bu kullanıcının şifresi ayarlanmamış. Lütfen yönetici ile iletişime geçin." }
+    }
+    
     if (user.password !== password) {
       return { success: false, message: "Hatalı şifre." }
     }

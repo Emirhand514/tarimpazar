@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // AvatarImage de eklendi
-import { PrismaClient } from "@prisma/client";
 import { MapPin, Calendar, User, MessageSquare, ArrowLeft, Share2, AlertTriangle, RefreshCw } from "lucide-react";
 import { notFound } from "next/navigation";
 import MessageButton from "./message-button"; // Doğru import edildi
@@ -13,6 +12,43 @@ import { getCurrentUser } from "@/lib/auth";
 import FavoriteButton from "@/components/favorite-button";
 import { prisma } from "@/lib/prisma";
 import ReportButton from "@/components/report-button"; // Import ReportButton
+import type { Metadata } from "next";
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Metadata> {
+  const { id } = await params;
+  const listing = await getListingDetail(id);
+  
+  if (!listing) {
+    return {
+      title: "İlan Bulunamadı",
+    };
+  }
+
+  const title = `${listing.title} - TarımPazar`;
+  const description = listing.description.substring(0, 160);
+  const image = listing.type === "product" 
+    ? (listing as any).image || "/og-image.jpg"
+    : "/og-image.jpg";
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [image],
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
+}
 
 async function getListingDetail(id: string) {
   // ID formatı: "prod-clps..." veya "job-clps..."
@@ -121,8 +157,55 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
 
   const canContact = !hasBlocked && !isBlockedBy;
 
+  // Structured Data for Product/Job Listing
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": listing.type === "product" ? "Product" : "JobPosting",
+    "name": listing.title,
+    "description": listing.description,
+    ...(listing.type === "product" ? {
+      "offers": {
+        "@type": "Offer",
+        "price": (listing as any).price,
+        "priceCurrency": "TRY",
+        "availability": "https://schema.org/InStock",
+      },
+      "category": (listing as any).category,
+    } : {
+      "baseSalary": {
+        "@type": "MonetaryAmount",
+        "currency": "TRY",
+        "value": {
+          "@type": "QuantitativeValue",
+          "value": (listing as any).wage,
+          "unitText": "MONTH"
+        }
+      },
+      "employmentType": (listing as any).workType,
+    }),
+    "datePosted": listing.createdAt.toISOString(),
+    "location": {
+      "@type": "Place",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": listing.type === "product" 
+          ? ((listing as any).city || "")
+          : ((listing as any).city || ""),
+        "addressRegion": listing.type === "product"
+          ? ((listing as any).district || "")
+          : ((listing as any).district || ""),
+      }
+    },
+    "image": image,
+  };
+
   return (
-    <div className="min-h-screen bg-muted/20 py-8">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <div className="min-h-screen bg-muted/20 py-8">
       <div className="container mx-auto px-4 max-w-5xl">
         
         {/* Breadcrumb / Back Navigation */}
@@ -284,6 +367,7 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import EditListingForm from "./edit-form";
-
-const prisma = new PrismaClient();
 
 async function getListing(id: string) {
   // id formatı yine "prod-xyz" veya "job-xyz" olabilir mi?

@@ -1,8 +1,16 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, FileText, MessageSquare, Settings, LogOut, BarChart3, ShoppingBag, Users, Flag, FileStack, Megaphone, Mail } from "lucide-react"; // Import Mail
+import { LayoutDashboard, FileText, MessageSquare, Settings, LogOut, BarChart3, ShoppingBag, Users, Flag, FileStack, Megaphone, Mail, Sprout, Home } from "lucide-react"; // Import Mail
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetClose,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Genel Bakış", href: "/dashboard" },
@@ -22,9 +30,8 @@ type UserType = {
     unreadNotificationCount?: number;
 } | null;
 
-export function Sidebar({ user }: { user: UserType }) { // Accept user prop
-  const pathname = usePathname();
-
+// Sidebar içeriği (hem desktop hem mobil için)
+function SidebarContent({ user, pathname, SheetClose }: { user: UserType; pathname: string; SheetClose?: React.ReactNode }) {
   const dynamicSidebarItems = [...sidebarItems]; // Create a mutable copy
 
   // Conditionally add Admin links
@@ -75,23 +82,101 @@ export function Sidebar({ user }: { user: UserType }) { // Accept user prop
   }
 
   return (
-    <aside className="w-64 bg-white border-r hidden md:flex flex-col min-h-screen shrink-0">
-      <nav className="flex-1 p-4 space-y-1">
-        {dynamicSidebarItems.map((item) => { // Use dynamicSidebarItems
-          const isActive = pathname === item.href;
+    <nav className="flex flex-col space-y-1 p-4">
+      {/* Ana Sayfa Butonu */}
+      {!SheetClose && (
+        <Link href="/">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-muted-foreground mb-2"
+          >
+            <Home className="mr-2 h-4 w-4" />
+            Ana Sayfaya Dön
+          </Button>
+        </Link>
+      )}
+      {dynamicSidebarItems.map((item) => {
+        const isActive = pathname === item.href;
+        const linkContent = (
+          <Button
+            variant={isActive ? "secondary" : "ghost"}
+            className={`w-full justify-start ${isActive ? "bg-emerald-50 text-emerald-700" : "text-muted-foreground"}`}
+          >
+            <item.icon className="mr-2 h-4 w-4" />
+            {item.label}
+          </Button>
+        );
+        
+        if (SheetClose) {
           return (
-            <Link key={item.href} href={item.href}>
-              <Button
-                variant={isActive ? "secondary" : "ghost"}
-                className={`w-full justify-start ${isActive ? "bg-emerald-50 text-emerald-700" : "text-muted-foreground"}`}
-              >
-                <item.icon className="mr-2 h-4 w-4" />
-                {item.label}
-              </Button>
-            </Link>
+            <SheetClose key={item.href} asChild>
+              <Link href={item.href}>
+                {linkContent}
+              </Link>
+            </SheetClose>
           );
-        })}
-      </nav>
-    </aside>
+        }
+        
+        return (
+          <Link key={item.href} href={item.href}>
+            {linkContent}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+export function Sidebar({ user }: { user: UserType }) {
+  const pathname = usePathname();
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="w-64 bg-white border-r hidden md:flex flex-col min-h-screen shrink-0">
+        {/* Logo / Ana Sayfa Linki */}
+        <div className="p-4 border-b">
+          <Link href="/" className="flex items-center gap-2 font-bold text-xl text-emerald-700 hover:opacity-90 transition-opacity">
+            <div className="bg-emerald-100 p-1.5 rounded-lg">
+              <Sprout className="h-5 w-5 text-emerald-600" />
+            </div>
+            <span>Tarım<span className="text-foreground">Pazar</span></span>
+          </Link>
+        </div>
+        <SidebarContent user={user} pathname={pathname} />
+      </aside>
+
+      {/* Mobile Sidebar */}
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="md:hidden fixed top-4 left-4 z-[100] bg-white shadow-lg border h-10 w-10">
+            <Menu className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-64 p-0 sm:w-64">
+          <SheetTitle className="sr-only">Menü</SheetTitle>
+          <div className="p-4 border-b">
+            <Link href="/" className="flex items-center gap-2 font-bold text-lg text-emerald-700 hover:opacity-90 transition-opacity">
+              <div className="bg-emerald-100 p-1 rounded-lg">
+                <Sprout className="h-4 w-4 text-emerald-600" />
+              </div>
+              <span>Tarım<span className="text-foreground">Pazar</span></span>
+            </Link>
+          </div>
+          {/* Ana Sayfa Butonu */}
+          <div className="px-4 pt-4">
+            <SheetClose asChild>
+              <Link href="/">
+                <Button variant="outline" className="w-full justify-start gap-2">
+                  <Home className="h-4 w-4" />
+                  Ana Sayfaya Dön
+                </Button>
+              </Link>
+            </SheetClose>
+          </div>
+          <SidebarContent user={user} pathname={pathname} SheetClose={SheetClose} />
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

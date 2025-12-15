@@ -194,16 +194,32 @@ export default function ReportsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {userListings.map((listing) => (
-                  <TableRow key={listing.id}>
-                    <TableCell className="font-medium">{listing.title}</TableCell>
-                    <TableCell>{listing.category}</TableCell>
-                    <TableCell>{listing.price} ₺</TableCell>
-                    <TableCell>{listing.status}</TableCell>
-                    <TableCell>{listing.views}</TableCell>
-                    <TableCell>{listing.date}</TableCell>
+                {userListings.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      Henüz ilanınız bulunmamaktadır.
+                    </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  userListings.map((listing) => (
+                    <TableRow key={listing.id}>
+                      <TableCell className="font-medium">{listing.title}</TableCell>
+                      <TableCell>{listing.location || listing.category || "Belirtilmemiş"}</TableCell>
+                      <TableCell>{listing.price}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          listing.status === "Aktif" 
+                            ? "bg-green-100 text-green-700" 
+                            : "bg-gray-100 text-gray-700"
+                        }`}>
+                          {listing.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>{listing.views}</TableCell>
+                      <TableCell>{listing.date}</TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>

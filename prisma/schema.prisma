@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -17,7 +17,7 @@ model User {
   email         String    @unique
   password      String?   // Harici auth (OAuth) kullanılırsa boş olabilir
   image         String?
-  role          String    @default("FARMER") // FARMER, WORKER, ENGINEER, BUSINESS, ADMIN
+  role          String    @default("FARMER") // FARMER, WORKER, ENGINEER, BUSINESS, OPERATOR, SUPPLIER, ADMIN
   
   // Profil Bilgileri
   phone         String?
@@ -137,7 +137,7 @@ model JobPosting {
   city        String?
   district    String?
   contactPhone String? // New optional contact phone for the listing
-  wage        Decimal   // Ücret
+  wage        Float   // Ücret
   currency    String    @default("TRY")
   workType    String    // Tam zamanlı, Mevsimlik vb.
   active      Boolean   @default(true)
@@ -157,7 +157,7 @@ model Product {
   id          String    @id @default(cuid())
   title       String
   description String
-  price       Decimal
+  price       Float
   currency    String    @default("TRY")
   category    String    // Tohum, Gübre, Traktör vb.
   city        String?

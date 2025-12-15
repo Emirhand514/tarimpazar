@@ -1,10 +1,8 @@
 "use server"
 
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
-
-const prisma = new PrismaClient()
 
 // Favori Ekle/Çıkar (Mevcut)
 export async function toggleFavoriteAction(listingId: string, type: "product" | "job") {

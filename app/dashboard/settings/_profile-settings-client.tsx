@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -9,10 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { turkeyLocations } from "@/lib/locations";
 import { updateUserProfileAction } from "@/app/actions/profile"; // Server action for profile update
+import { AVAILABLE_ROLES } from "@/lib/roles";
 
 // This data would typically be passed from a Server Component parent
 // For now, we'll simulate fetching it within the client component (which is fine for demo purposes
@@ -40,28 +41,60 @@ export default function ProfileSettingsPage({ initialUserData }: { initialUserDa
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(initialUserData.name || "");
+  const [email, setEmail] = useState(initialUserData.email || "");
+  const [role, setRole] = useState(initialUserData.role || "FARMER");
   const [phone, setPhone] = useState(initialUserData.phone || "");
   const [bio, setBio] = useState(initialUserData.bio || "");
   const [city, setCity] = useState(initialUserData.city || "");
   const [district, setDistrict] = useState(initialUserData.district || "");
   const [crops, setCrops] = useState(initialUserData.crops || "");
   const [certificates, setCertificates] = useState(initialUserData.certificates || "");
+  const [preview, setPreview] = useState<string | null>(initialUserData.image);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const currentDistricts = turkeyLocations.find(loc => loc.city === city)?.districts || [];
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+      const url = URL.createObjectURL(file)
+      setPreview(url)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    // File'ı state'ten veya input'tan al ve FormData'ya ekle
+    if (selectedFile) {
+      formData.set("image", selectedFile);
+    } else {
+      const fileInput = fileInputRef.current;
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        formData.set("image", fileInput.files[0]);
+      }
+    }
+    
     startTransition(async () => {
-      const result = await updateUserProfileAction(formData);
-      if (result.success) {
-        toast({ title: "Başarılı", description: result.message });
-        router.refresh(); // Revalidate data across the app
-      } else {
-        toast({ title: "Hata", description: result.message, variant: "destructive" });
+      try {
+        const result = await updateUserProfileAction(formData);
+        if (result.success) {
+          toast({ title: "Başarılı", description: result.message });
+          router.refresh(); // Revalidate data across the app
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } else {
+          toast({ title: "Hata", description: result.message, variant: "destructive" });
+        }
+      } catch (error) {
+        console.error("Submit error:", error);
+        toast({ title: "Hata", description: "Bir hata oluştu. Lütfen tekrar deneyin.", variant: "destructive" });
       }
     });
   };
@@ -75,18 +108,39 @@ export default function ProfileSettingsPage({ initialUserData }: { initialUserDa
           <CardTitle>Profil Bilgilerini Düzenle</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" encType="multipart/form-data">
             <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20 border-2 shadow-sm">
-                <AvatarImage src={initialUserData.image || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary text-3xl font-bold">
-                  {(initialUserData.name || "U").substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                <Avatar className="h-20 w-20 border-2 shadow-sm">
+                  <AvatarImage src={preview || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-3xl font-bold">
+                    {(initialUserData.name || "U").substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="text-white h-5 w-5" />
+                </div>
+                <input 
+                  type="file" 
+                  name="image" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+              </div>
               <div>
                 <Label>Profil Fotoğrafı</Label>
-                <p className="text-sm text-muted-foreground">Şu an için fotoğraf yükleme desteklenmiyor.</p>
-                {/* <Button variant="outline" size="sm" className="mt-2">Fotoğrafı Değiştir</Button> */}
+                <p className="text-sm text-muted-foreground">Fotoğrafı değiştirmek için üzerine tıklayın.</p>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Fotoğrafı Değiştir
+                </Button>
               </div>
             </div>
 
@@ -96,8 +150,8 @@ export default function ProfileSettingsPage({ initialUserData }: { initialUserDa
                 <Input id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} disabled={isPending} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">E-posta (Değiştirilemez)</Label>
-                <Input id="email" name="email" value={initialUserData.email} disabled />
+                <Label htmlFor="email">E-posta</Label>
+                <Input id="email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isPending} required />
               </div>
             </div>
 
@@ -107,8 +161,20 @@ export default function ProfileSettingsPage({ initialUserData }: { initialUserDa
                 <Input id="phone" name="phone" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={isPending} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role">Rol (Değiştirilemez)</Label>
-                <Input id="role" name="role" value={initialUserData.role === "FARMER" ? "Çiftçi" : initialUserData.role} disabled />
+                <Label htmlFor="role">Rol</Label>
+                <Select onValueChange={setRole} value={role} disabled={isPending}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Rol Seçiniz" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AVAILABLE_ROLES.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <input type="hidden" name="role" value={role} />
               </div>
             </div>
 

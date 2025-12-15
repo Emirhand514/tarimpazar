@@ -14,13 +14,17 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Camera, Save, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { AVAILABLE_ROLES } from "@/lib/roles"
 
 export default function ProfileForm({ user }: { user: any }) {
   const [isPending, startTransition] = useTransition()
   const [preview, setPreview] = useState<string | null>(user.image)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [role, setRole] = useState<string>(user.role || "FARMER")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // İsim ayrıştırma (Basitçe)
@@ -38,25 +42,54 @@ export default function ProfileForm({ user }: { user: any }) {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      console.log("File selected:", file.name, file.size, file.type)
+      setSelectedFile(file)
       const url = URL.createObjectURL(file)
       setPreview(url)
     }
   }
 
-  const handleSubmit = async (formData: FormData) => {
-    startTransition(async () => {
-      const result = await updateUserProfileAction(formData)
-      if (result.success) {
-        toast.success(result.message)
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    
+    const formData = new FormData(e.currentTarget)
+    
+    // File'ı state'ten veya input'tan al ve FormData'ya ekle
+    if (selectedFile) {
+      formData.set("image", selectedFile)
+      console.log("Image added to formData from state:", selectedFile.name, selectedFile.size)
+    } else {
+      const fileInput = fileInputRef.current
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        formData.set("image", fileInput.files[0])
+        console.log("Image added to formData from input:", fileInput.files[0].name)
       } else {
-        toast.error(result.message)
+        console.log("No file selected")
+      }
+    }
+
+    startTransition(async () => {
+      try {
+        const result = await updateUserProfileAction(formData)
+        if (result.success) {
+          toast.success(result.message)
+          // Başarılı olursa sayfayı yenile (yeni resmi görmek için)
+          setTimeout(() => {
+            window.location.reload()
+          }, 1000)
+        } else {
+          toast.error(result.message)
+        }
+      } catch (error) {
+        console.error("Submit error:", error)
+        toast.error("Bir hata oluştu. Lütfen tekrar deneyin.")
       }
     })
   }
 
   return (
     <div className="grid gap-6 md:grid-cols-[1fr_250px] lg:grid-cols-[1fr_300px]">
-      <form action={handleSubmit} className="contents">
+      <form onSubmit={handleSubmit} className="contents" encType="multipart/form-data">
         {/* Main Form Area */}
         <div className="space-y-6">
           <Card>
@@ -77,9 +110,27 @@ export default function ProfileForm({ user }: { user: any }) {
                   <Input id="lastName" name="lastName" defaultValue={last} placeholder="Soyadınız" required />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">E-posta Adresi</Label>
-                <Input id="email" name="email" type="email" defaultValue={user.email} required />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-posta Adresi</Label>
+                  <Input id="email" name="email" type="email" defaultValue={user.email} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Rol</Label>
+                  <Select value={role} onValueChange={setRole}>
+                    <SelectTrigger id="role" className="w-full">
+                      <SelectValue placeholder="Rol Seçiniz" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AVAILABLE_ROLES.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          {role.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <input type="hidden" name="role" value={role} />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Telefon Numarası</Label>

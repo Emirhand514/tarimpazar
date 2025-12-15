@@ -4,11 +4,20 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, MapPin, RefreshCw, ArrowRightLeft, Tractor, Briefcase, Filter } from "lucide-react";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { FilterSidebar } from "@/components/explore/FilterSidebar"; 
-import { Prisma } from "@prisma/client"; 
+import { MobileFilterSheet } from "@/components/explore/MobileFilterSheet";
+import { Prisma } from "@prisma/client";
+import type { Metadata } from "next";
 
-const prisma = new PrismaClient();
+export const metadata: Metadata = {
+  title: "İlanlar",
+  description: "Tarım sektöründe iş ilanları, ürün satışları ve takas teklifleri. Binlerce aktif ilan arasından aradığınızı bulun.",
+  openGraph: {
+    title: "Tarım İlanları - TarımPazar",
+    description: "Tarım sektöründe iş ilanları, ürün satışları ve takas teklifleri. Binlerce aktif ilan arasından aradığınızı bulun.",
+  },
+};
 
 // Veritabanından ilanları çeken fonksiyon
 async function getListings(searchParams: { [key: string]: string | string[] | undefined }) {
@@ -188,11 +197,16 @@ export default async function ExplorePage(props: {
           <FilterSidebar />
         </div>
 
+        {/* Mobile Filter Button */}
+        <div className="md:hidden mb-4">
+          <MobileFilterSheet />
+        </div>
+
         {/* Listings Grid */}
         <main className="flex-1">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold tracking-tight">Güncel İlanlar</h1>
-            <span className="text-muted-foreground text-sm">{allListings.length} ilan bulundu</span>
+            <span className="text-muted-foreground text-sm hidden sm:inline">{allListings.length} ilan bulundu</span>
           </div>
 
           {allListings.length === 0 ? (

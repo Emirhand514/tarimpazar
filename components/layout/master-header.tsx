@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logoutAction } from "@/app/actions/auth";
+import { getRoleLabel } from "@/lib/roles";
 
 type UserType = {
     id: string;
@@ -58,18 +59,24 @@ export function MasterHeader({ user }: { user: UserType }) {
   };
 
   const isHomepage = pathname === "/";
+  const isDashboard = pathname?.startsWith("/dashboard");
+
+  // Dashboard sayfalarında header'ı gizle (kendi sidebar'ı var)
+  if (isDashboard) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="w-full h-16 flex items-center justify-between gap-4">
+      <div className="w-full h-16 flex items-center justify-between gap-2 md:gap-4 px-2 md:px-0">
         
         {/* LOGO */}
-        <div className="flex items-center gap-2 shrink-0 pl-4">
-          <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 font-bold text-xl text-emerald-700 hover:opacity-90 transition-opacity">
+        <div className="flex items-center gap-2 shrink-0 pl-2 md:pl-4">
+          <Link href="/" className="flex items-center gap-2 font-bold text-xl text-emerald-700 hover:opacity-90 transition-opacity">
             <div className="bg-emerald-100 p-1.5 rounded-lg">
                 <Sprout className="h-6 w-6 text-emerald-600" />
             </div>
-            <span className="hidden md:inline">Tarım<span className="text-foreground">Platform</span></span>
+            <span className="hidden md:inline">Tarım<span className="text-foreground">Pazar</span></span>
           </Link>
         </div>
 
@@ -89,7 +96,7 @@ export function MasterHeader({ user }: { user: UserType }) {
         )}
 
         {/* NAVIGATION & ACTIONS */}
-        <div className="flex items-center gap-2 md:gap-4 shrink-0 pr-4 ml-auto">
+        <div className="flex items-center gap-1 md:gap-4 shrink-0 pr-2 md:pr-4 ml-auto">
             
             {/* DYNAMIC NAV (Desktop) */}
             {!isHomepage && (
@@ -110,7 +117,7 @@ export function MasterHeader({ user }: { user: UserType }) {
             )}
 
             {/* AUTH ACTIONS */}
-            {isHomepage || !user ? (
+            {!user ? (
                 <div className="flex items-center gap-2">
                     <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
                         <Link href="/auth/sign-in">Giriş Yap</Link>
@@ -175,7 +182,7 @@ export function MasterHeader({ user }: { user: UserType }) {
                                 </Avatar>
                                 <div className="text-left hidden lg:block">
                                     <p className="text-sm font-semibold leading-none text-gray-700">{user.name || "Kullanıcı"}</p>
-                                    <p className="text-xs text-muted-foreground">{user.role === "FARMER" ? "Çiftçi" : user.role}</p>
+                                    <p className="text-xs text-muted-foreground">{getRoleLabel(user.role)}</p>
                                 </div>
                             </button>
                         </DropdownMenuTrigger>
@@ -206,10 +213,6 @@ export function MasterHeader({ user }: { user: UserType }) {
                 </div>
             )}
 
-            {/* MOBILE MENU TRIGGER */}
-            <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-            </Button>
 
         </div>
       </div>

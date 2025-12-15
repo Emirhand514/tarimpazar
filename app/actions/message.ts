@@ -1,10 +1,8 @@
 "use server"
 
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
-
-const prisma = new PrismaClient()
 
 // Kullanıcının ID'sini almak için yardımcı
 async function getUserId() {

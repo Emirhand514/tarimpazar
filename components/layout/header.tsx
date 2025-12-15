@@ -55,7 +55,7 @@ export function Header() {
             <div className="bg-emerald-100 p-1.5 rounded-lg">
                 <Sprout className="h-6 w-6 text-emerald-600" />
             </div>
-            <span className="hidden md:inline">Tarım<span className="text-foreground">Platform</span></span>
+            <span className="hidden md:inline">Tarım<span className="text-foreground">Pazar</span></span>
           </Link>
         </div>
 

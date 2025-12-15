@@ -9,7 +9,10 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "check:production": "tsx scripts/prepare-for-production.ts",
+    "prepare:postgresql": "tsx scripts/prepare-postgresql.ts",
+    "switch:postgresql": "bash scripts/switch-to-postgresql.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
