@@ -46,6 +46,9 @@ interface UserData {
   district: string | null;
   createdAt: Date;
   phone: string | null;
+  bio: string | null;
+  crops: string | null;
+  certificates: string | null;
   isBanned: boolean;
   bannedUntil: Date | null;
   banReason: string | null;
