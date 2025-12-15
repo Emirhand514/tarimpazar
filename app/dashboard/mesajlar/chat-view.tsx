@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { getMessages, sendMessageAction } from "@/app/actions/message"
+import { getMessages, sendMessageAction, markMessagesAsReadAction, clearConversationAction } from "@/app/actions/message"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,8 +9,6 @@ import { Send, Loader2, Trash2, CheckCheck } from "lucide-react"
 import { useRouter } from "next/navigation"
 import BlockButton from "@/components/block-button"
 import ReportButton from "@/components/report-button"
-import { markMessagesAsReadAction, clearConversationAction } from "@/app/actions/message"
-import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
