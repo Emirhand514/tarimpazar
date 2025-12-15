@@ -144,9 +144,9 @@ export default function EditUserDialog({ user, open, onOpenChange, onSuccess }: 
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {AVAILABLE_ROLES.map((role: string) => (
-                      <SelectItem key={role} value={role}>
-                        {role}
+                    {AVAILABLE_ROLES.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
