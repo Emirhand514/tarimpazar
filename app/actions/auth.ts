@@ -13,13 +13,17 @@ export async function loginAction(formData: FormData) {
   }
 
   try {
-    // Email'i lowercase'e çevir (case-insensitive arama için)
+    // Email'i lowercase'e çevir ve trim yap (case-insensitive arama için)
     const normalizedEmail = email.toLowerCase().trim()
+    
+    console.log("Login attempt for email:", normalizedEmail);
     
     // Kullanıcıyı bul
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     })
+
+    console.log("User found:", user ? "Yes" : "No");
 
     if (!user) {
       return { success: false, message: "Kullanıcı bulunamadı." }
