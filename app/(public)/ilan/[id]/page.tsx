@@ -312,13 +312,6 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
                             initialIsFavorited={!!isFavorited} 
                         />
                         <ShareButton listingId={listingId} listingTitle={listing.title} />
-                        {currentUser && currentUser.id !== listing.userId && (
-                            <ReportListingButton 
-                                reportedUserId={listing.userId}
-                                reportedListingId={listingId}
-                                isLoggedIn={!!currentUser}
-                            />
-                        )}
                     </div>
                 </div>
 
