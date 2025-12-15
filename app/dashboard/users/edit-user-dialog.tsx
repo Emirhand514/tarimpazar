@@ -61,7 +61,7 @@ export default function EditUserDialog({ user, open, onOpenChange, onSuccess }: 
   })
 
   // User değiştiğinde formu güncelle
-  useState(() => {
+  useEffect(() => {
     if (user) {
       setFormData({
         name: user.name || "",
