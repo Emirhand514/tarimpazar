@@ -31,7 +31,7 @@ type UserType = {
 } | null;
 
 // Sidebar içeriği (hem desktop hem mobil için)
-function SidebarContent({ user, pathname, SheetClose }: { user: UserType; pathname: string; SheetClose?: React.ReactNode }) {
+function SidebarContent({ user, pathname, isMobile }: { user: UserType; pathname: string; isMobile?: boolean }) {
   const dynamicSidebarItems = [...sidebarItems]; // Create a mutable copy
 
   // Conditionally add Admin links
@@ -84,7 +84,7 @@ function SidebarContent({ user, pathname, SheetClose }: { user: UserType; pathna
   return (
     <nav className="flex flex-col space-y-1 p-4">
       {/* Ana Sayfa Butonu */}
-      {!SheetClose && (
+      {!isMobile && (
         <Link href="/">
           <Button
             variant="ghost"
@@ -107,7 +107,7 @@ function SidebarContent({ user, pathname, SheetClose }: { user: UserType; pathna
           </Button>
         );
         
-        if (SheetClose) {
+        if (isMobile) {
           return (
             <SheetClose key={item.href} asChild>
               <Link href={item.href}>
@@ -174,7 +174,7 @@ export function Sidebar({ user }: { user: UserType }) {
               </Link>
             </SheetClose>
           </div>
-          <SidebarContent user={user} pathname={pathname} SheetClose={SheetClose} />
+          <SidebarContent user={user} pathname={pathname} isMobile={true} />
         </SheetContent>
       </Sheet>
     </>
