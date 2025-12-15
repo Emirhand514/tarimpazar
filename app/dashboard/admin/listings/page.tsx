@@ -49,7 +49,9 @@ export default function AdminListingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialSearchQuery = searchParams.get("q") || "";
+  const initialStatusFilter = searchParams.get("status") || "all"; // "all", "active", "inactive"
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">(initialStatusFilter as "all" | "active" | "inactive");
   const [listings, setListings] = useState<ListingData[]>([]);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -63,9 +65,16 @@ export default function AdminListingsPage() {
   useEffect(() => {
     startTransition(async () => {
       const fetchedListings = await fetchAllListingsAction(searchQuery);
-      setListings(fetchedListings);
+      // Filter by status
+      let filteredListings = fetchedListings;
+      if (statusFilter === "active") {
+        filteredListings = fetchedListings.filter(listing => listing.active);
+      } else if (statusFilter === "inactive") {
+        filteredListings = fetchedListings.filter(listing => !listing.active);
+      }
+      setListings(filteredListings);
     });
-  }, [searchQuery]);
+  }, [searchQuery, statusFilter]);
 
   // Debounce effect for search input
   useEffect(() => {
@@ -123,15 +132,52 @@ export default function AdminListingsPage() {
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-2xl font-bold tracking-tight mb-6">İlan Yönetimi</h1>
       
-      <div className="mb-6 relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input 
-          type="text"
-          placeholder="İlan başlığı, açıklaması veya ilan sahibi ile ara..."
-          className="pl-9"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <div className="mb-6 flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            type="text"
+            placeholder="İlan başlığı, açıklaması veya ilan sahibi ile ara..."
+            className="pl-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant={statusFilter === "all" ? "default" : "outline"}
+            onClick={() => {
+              setStatusFilter("all");
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("status", "all");
+              router.replace(`?${params.toString()}`);
+            }}
+          >
+            Tümü
+          </Button>
+          <Button
+            variant={statusFilter === "active" ? "default" : "outline"}
+            onClick={() => {
+              setStatusFilter("active");
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("status", "active");
+              router.replace(`?${params.toString()}`);
+            }}
+          >
+            Aktif
+          </Button>
+          <Button
+            variant={statusFilter === "inactive" ? "default" : "outline"}
+            onClick={() => {
+              setStatusFilter("inactive");
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("status", "inactive");
+              router.replace(`?${params.toString()}`);
+            }}
+          >
+            Pasif
+          </Button>
+        </div>
       </div>
 
       <Card>

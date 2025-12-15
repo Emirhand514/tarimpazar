@@ -143,9 +143,19 @@ export default function AdminReportsPage() {
                                     </TableCell>
                                     <TableCell>
                                         {reportedListing ? (
-                                            <Link href={`/ilan/${listingType}-${listingId}`} className="text-blue-600 hover:underline flex items-center gap-1">
-                                                <Eye className="h-4 w-4" /> {reportedListing.title}
-                                            </Link>
+                                            <div className="space-y-1">
+                                                <p className="font-medium text-sm">{reportedListing.title}</p>
+                                                <Link 
+                                                    href={`/ilan/${listingType}-${listingId}`} 
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    <Button variant="outline" size="sm" className="h-7">
+                                                        <ExternalLink className="mr-1 h-3 w-3" />
+                                                        İlana Git
+                                                    </Button>
+                                                </Link>
+                                            </div>
                                         ) : (
                                             "N/A"
                                         )}
@@ -223,14 +233,22 @@ export default function AdminReportsPage() {
               </div>
               {(selectedReport.product || selectedReport.jobPosting) && (
                 <div>
-                  <h4 className="font-semibold mb-2">İlan:</h4>
-                  <Link 
-                    href={`/ilan/${selectedReport.product ? 'prod' : 'job'}-${selectedReport.productId || selectedReport.jobPostingId}`}
-                    className="text-blue-600 hover:underline flex items-center gap-1"
-                  >
-                    <Eye className="h-4 w-4" /> 
-                    {(selectedReport.product || selectedReport.jobPosting)?.title}
-                  </Link>
+                  <h4 className="font-semibold mb-2">İlan Bilgileri:</h4>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      {(selectedReport.product || selectedReport.jobPosting)?.title}
+                    </p>
+                    <Link 
+                      href={`/ilan/${selectedReport.product ? 'prod' : 'job'}-${selectedReport.productId || selectedReport.jobPostingId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="outline" className="w-full sm:w-auto">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        İlanı Görüntüle
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               )}
               <div>
