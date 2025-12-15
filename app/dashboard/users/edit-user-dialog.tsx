@@ -75,7 +75,7 @@ export default function EditUserDialog({ user, open, onOpenChange, onSuccess }: 
         certificates: user.certificates || "",
       })
     }
-  })
+  }, [user])
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
