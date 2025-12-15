@@ -38,11 +38,15 @@ export default function EditListingForm({ listing }: { listing: any }) {
     startTransition(async () => {
       try {
         await updateListingAction(formData);
-        // Eğer buraya gelirse, redirect çalışmadı veya başka bir sorun var
-        // Normalde updateListingAction başarılı olursa redirect yapar ve bu satırlara gelmez.
-        // Başarı mesajı redirect sonrası gösterilir veya backend'den dönen mesaja göre toast kullanılır.
-        // Şimdilik, başarılı bir işlemde bu kısma gelmeyeceği varsayılıyor.
+        // Redirect başarılıysa buraya gelmez
       } catch (error: any) {
+        // Next.js redirect() özel bir hata fırlatır (NEXT_REDIRECT)
+        // Bu hatayı ignore etmemiz gerekiyor
+        if (error?.digest?.startsWith('NEXT_REDIRECT')) {
+          // Redirect başarılı, hata mesajı gösterme
+          return;
+        }
+        console.error("İlan güncelleme hatası:", error);
         toast.error(error.message || "İlan güncellenirken bir hata oluştu.");
       }
     })

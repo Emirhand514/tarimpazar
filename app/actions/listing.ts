@@ -88,8 +88,13 @@ export async function createListingAction(formData: FormData) {
   const description = formData.get("description") as string;
   const city = formData.get("city") as string;
   const district = formData.get("district") as string;
-  const contactPhone = formData.get("contactPhone") as string;
+  const contactPhone = (formData.get("contactPhone") as string) || "";
   const images = formData.getAll("images"); // Birden fazla resim olabilir
+
+  // Validasyon
+  if (!title || !description || !city || !district) {
+    throw new Error("Lütfen tüm zorunlu alanları doldurun.");
+  }
 
   // Resim yükleme işlemi
   const imageUrls: string[] = [];
@@ -130,9 +135,14 @@ export async function createListingAction(formData: FormData) {
 
   try {
     if (type === "job") {
-      const wage = parseFloat(formData.get("wage") as string);
+      const wageStr = formData.get("wage") as string;
+      const wage = wageStr ? parseFloat(wageStr) : 0;
       const currency = formData.get("currency") as string || "TRY";
-      const workType = formData.get("workType") as string;
+      const workType = formData.get("workType") as string || "Tam Zamanlı";
+
+      if (!workType) {
+        throw new Error("İş türü seçilmelidir.");
+      }
 
       await prisma.jobPosting.create({
         data: {
@@ -140,7 +150,7 @@ export async function createListingAction(formData: FormData) {
           description,
           city,
           district,
-          contactPhone,
+          contactPhone: contactPhone || null,
           wage,
           currency,
           workType,
@@ -150,9 +160,10 @@ export async function createListingAction(formData: FormData) {
         },
       });
     } else if (type === "product") {
-      const price = parseFloat(formData.get("price") as string);
+      const priceStr = formData.get("price") as string;
+      const price = priceStr ? parseFloat(priceStr) : 0;
       const currency = formData.get("currency") as string || "TRY";
-      const category = (formData.get("category") as string) || ""; // Eğer null gelirse boş string ata
+      const category = (formData.get("category") as string) || "ekipman"; // Varsayılan kategori
 
       await prisma.product.create({
         data: {
@@ -160,7 +171,7 @@ export async function createListingAction(formData: FormData) {
           description,
           city,
           district,
-          contactPhone,
+          contactPhone: contactPhone || null,
           price,
           currency,
           category,

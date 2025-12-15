@@ -44,9 +44,15 @@ export default function CreateListingPage() {
     startTransition(async () => {
       try {
         await createListingAction(formData);
-        // Eğer buraya gelirse, redirect çalışmadı veya başka bir sorun var
-        // Normalde createListingAction başarılı olursa redirect yapar ve bu satırlara gelmez.
+        // Redirect başarılıysa buraya gelmez
       } catch (error: any) {
+        // Next.js redirect() özel bir hata fırlatır (NEXT_REDIRECT)
+        // Bu hatayı ignore etmemiz gerekiyor
+        if (error?.digest?.startsWith('NEXT_REDIRECT')) {
+          // Redirect başarılı, hata mesajı gösterme
+          return;
+        }
+        console.error("İlan oluşturma hatası:", error);
         setErrorMessage(error.message || "İlan oluşturulurken bir hata oluştu.");
       }
     })
